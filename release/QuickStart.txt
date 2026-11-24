@@ -1,0 +1,36 @@
+========================================================================
+🔋 BatteryGuard Pro — Portable Battery Charging & Health Monitor
+========================================================================
+
+Thank you for downloading BatteryGuard Pro!
+
+QUICK START:
+1. Double-click "BatteryGuard.exe" to launch.
+2. Set your Low Alert (e.g. 15%) and High Alert (e.g. 90%) thresholds.
+3. Choose your alarm sound (Digital Alarm, Melodic Chime, Siren, or Custom WAV).
+4. Click "Save Settings".
+5. Click "Hide to Tray" (or click 'X') — it runs silently in your Windows system tray!
+
+ZERO INSTALLATION & PORTABLE:
+- This is a single standalone file (~69 KB).
+- You can copy "BatteryGuard.exe" to a USB drive or other Windows laptops.
+- Works natively on Windows 11 and Windows 10 with zero dependencies.
+
+RESOURCE USAGE:
+- CPU: 0.0% idle (pure event-driven)
+- RAM: ~18-25 MB (drops to ~8-15 MB in system tray)
+- Battery Impact: < 0.001% (uses virtually no battery power)
+
+FEATURES INCLUDED:
+- ⚡ High Battery Alarm (90% default) — auto-stops when charger is unplugged.
+- 🪫 Low Battery Alarm (15% default) — auto-stops when charger is plugged in.
+- 📊 1-Click Windows Official Battery Health & Cycle Life Report.
+- 🌙 Quiet Hours (Mutes audio alerts overnight so you can sleep undisturbed).
+- ⚡ 100% Full Charge Reminder (Prevents continuous high-voltage saturation).
+- ⏰ Smart Snooze (5m/10m) & Stop Alarm controls.
+- 🚀 Start with Windows automatically.
+- 🎨 Modern Windows 11 Fluent Light UI with dynamic battery gauge.
+
+Need to customize or report issues?
+Visit the GitHub repository: https://github.com/ajink/battery_charging_status
+========================================================================

@@ -18,6 +18,7 @@ $sources = @(
     "src\AssemblyInfo.cs",
     "src\AppSettings.cs",
     "src\AudioAlert.cs",
+    "src\BatteryHealthService.cs",
     "src\BatteryMonitor.cs",
     "src\BatteryWidget.cs",
     "src\SystemTrayManager.cs",
@@ -34,7 +35,8 @@ $args = @(
     "/r:System.dll",
     "/r:System.Drawing.dll",
     "/r:System.Windows.Forms.dll",
-    "/r:System.Data.dll"
+    "/r:System.Data.dll",
+    "/r:System.Xml.dll"
 ) + $sources
 
 & $csc $args

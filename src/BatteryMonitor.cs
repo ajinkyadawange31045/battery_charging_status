@@ -8,7 +8,8 @@ namespace BatteryAlarmApp
     {
         None,
         LowBattery,
-        HighBattery
+        HighBattery,
+        FullCharge
     }
 
     public class BatterySnapshot
@@ -88,7 +89,6 @@ namespace BatteryAlarmApp
             _pollTimer.Interval = 2500; // Check every 2.5 seconds
             _pollTimer.Tick += delegate { CheckStatus(); };
 
-            // React immediately to AC adapter plug/unplug and sleep/resume events
             SystemEvents.PowerModeChanged += delegate(object sender, PowerModeChangedEventArgs e)
             {
                 CheckStatus();
@@ -163,23 +163,23 @@ namespace BatteryAlarmApp
                 return;
             }
 
-            // Determine if condition matches High or Low alarm
             ActiveAlarmState targetAlarm = ActiveAlarmState.None;
 
-            // Scenario 1: Low battery alarm
-            // Triggers when battery is <= LowThreshold AND laptop is NOT plugged in (discharging)
+            // Scenario 1: Low battery alarm (<= LowThreshold AND discharging)
             if (_settings.EnableLowAlarm && snap.Percent <= _settings.LowThreshold && !snap.IsPluggedIn)
             {
                 targetAlarm = ActiveAlarmState.LowBattery;
             }
-            // Scenario 2: High battery alarm
-            // Triggers when battery is >= HighThreshold AND laptop IS plugged in (charging)
+            // Scenario 2: High battery alarm (>= HighThreshold AND plugged in)
             else if (_settings.EnableHighAlarm && snap.Percent >= _settings.HighThreshold && snap.IsPluggedIn)
             {
-                targetAlarm = ActiveAlarmState.HighBattery;
+                if (snap.Percent >= 100 && _settings.FullChargeAlert)
+                    targetAlarm = ActiveAlarmState.FullCharge;
+                else
+                    targetAlarm = ActiveAlarmState.HighBattery;
             }
 
-            // If user plugged in charger while low battery was alarming -> Stop automatically!
+            // Auto-stop when user plugs in charger during low battery alarm
             if (_currentAlarmState == ActiveAlarmState.LowBattery && snap.IsPluggedIn)
             {
                 _alarmDismissedForCurrentCycle = false;
@@ -188,8 +188,8 @@ namespace BatteryAlarmApp
                 return;
             }
 
-            // If user unplugged charger while high battery was alarming -> Stop automatically!
-            if (_currentAlarmState == ActiveAlarmState.HighBattery && !snap.IsPluggedIn)
+            // Auto-stop when user unplugs charger during high battery alarm
+            if ((_currentAlarmState == ActiveAlarmState.HighBattery || _currentAlarmState == ActiveAlarmState.FullCharge) && !snap.IsPluggedIn)
             {
                 _alarmDismissedForCurrentCycle = false;
                 _snoozeUntil = null;
@@ -209,37 +209,51 @@ namespace BatteryAlarmApp
                 return;
             }
 
-            // If snooze is active and time has not elapsed yet, don't ring
+            // Handle snooze
             if (_snoozeUntil.HasValue)
             {
                 if (DateTime.Now < _snoozeUntil.Value)
                     return;
-                // Snooze expired!
                 _snoozeUntil = null;
             }
 
-            // If user dismissed this cycle, check if state changed significantly to re-arm
+            // If user dismissed this cycle
             if (_alarmDismissedForCurrentCycle)
             {
-                // Re-arm only if state changed (e.g. unplugged and re-plugged)
                 return;
             }
 
+            // Check Quiet Hours
+            bool inQuietHours = _settings.IsInQuietHours();
+
             // Trigger alarm if not already ringing for this state
-            if (_currentAlarmState != targetAlarm || !_audio.IsPlaying)
+            if (_currentAlarmState != targetAlarm || (!_audio.IsPlaying && !inQuietHours))
             {
                 _currentAlarmState = targetAlarm;
                 string message = "";
+
                 if (targetAlarm == ActiveAlarmState.LowBattery)
                 {
-                    message = string.Format("Battery Low ({0}%)! Please connect charger.", snap.Percent);
+                    message = string.Format("⚠️ Low Battery Alert ({0}%)! Please connect charger.", snap.Percent);
+                }
+                else if (targetAlarm == ActiveAlarmState.FullCharge)
+                {
+                    message = "⚡ Battery 100% Fully Charged! Unplug to preserve battery lifespan.";
                 }
                 else
                 {
-                    message = string.Format("Battery High ({0}%)! Please unplug charger to protect battery health.", snap.Percent);
+                    message = string.Format("⚡ Charge Threshold Reached ({0}%)! Please unplug charger.", snap.Percent);
                 }
 
-                _audio.StartAlarm(_settings.SoundType, _settings.CustomSoundPath, _settings.LoopAlarm, _settings.AlarmIntervalSeconds);
+                if (inQuietHours)
+                {
+                    message += " (Audio Muted: Quiet Hours Active)";
+                    _audio.StopAlarm();
+                }
+                else
+                {
+                    _audio.StartAlarm(_settings.SoundType, _settings.CustomSoundPath, _settings.LoopAlarm, _settings.AlarmIntervalSeconds);
+                }
 
                 if (OnAlarmTriggered != null)
                 {

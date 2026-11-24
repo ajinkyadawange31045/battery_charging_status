@@ -15,7 +15,7 @@ namespace BatteryAlarmApp
         public int HighThreshold { get; set; }
         public bool EnableLowAlarm { get; set; }
         public bool EnableHighAlarm { get; set; }
-        public string SoundType { get; set; } // "Chime", "Alarm", "Siren", "System", "Custom"
+        public string SoundType { get; set; } // "Alarm", "Chime", "Siren", "System", "Custom"
         public string CustomSoundPath { get; set; }
         public bool LoopAlarm { get; set; }
         public int AlarmIntervalSeconds { get; set; }
@@ -23,6 +23,12 @@ namespace BatteryAlarmApp
         public bool StartWithWindows { get; set; }
         public bool StartMinimized { get; set; }
         public bool MinimizeToTrayOnClose { get; set; }
+
+        // Smart features
+        public bool QuietHoursEnabled { get; set; }
+        public int QuietHoursStart { get; set; } // 0-23 (default 22 for 10 PM)
+        public int QuietHoursEnd { get; set; }   // 0-23 (default 7 for 7 AM)
+        public bool FullChargeAlert { get; set; }
 
         public AppSettings()
         {
@@ -43,6 +49,28 @@ namespace BatteryAlarmApp
             StartWithWindows = false;
             StartMinimized = false;
             MinimizeToTrayOnClose = true;
+
+            QuietHoursEnabled = false;
+            QuietHoursStart = 22;
+            QuietHoursEnd = 7;
+            FullChargeAlert = true;
+        }
+
+        public bool IsInQuietHours()
+        {
+            if (!QuietHoursEnabled) return false;
+            int nowHour = DateTime.Now.Hour;
+            if (QuietHoursStart > QuietHoursEnd)
+            {
+                // Overnight: e.g. 22:00 to 07:00
+                return nowHour >= QuietHoursStart || nowHour < QuietHoursEnd;
+            }
+            else if (QuietHoursStart < QuietHoursEnd)
+            {
+                // Daytime: e.g. 13:00 to 15:00
+                return nowHour >= QuietHoursStart && nowHour < QuietHoursEnd;
+            }
+            return false;
         }
 
         public static string GetConfigFilePath()
@@ -54,17 +82,17 @@ namespace BatteryAlarmApp
             if (File.Exists(portablePath))
                 return portablePath;
 
-            // Otherwise check if exeDir is writable (e.g. desktop/portable folder)
+            // Otherwise check if exeDir is writable (portable folder)
             try
             {
                 string testFile = Path.Combine(exeDir, ".write_test");
                 File.WriteAllText(testFile, "test");
                 File.Delete(testFile);
-                return portablePath; // Portable mode is supported!
+                return portablePath;
             }
             catch
             {
-                // If exe is in Program Files or read-only location, fallback to AppData
+                // Fallback to AppData
                 string appDataDir = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "BatteryAlarmPro");
                 if (!Directory.Exists(appDataDir))
                 {
@@ -89,12 +117,10 @@ namespace BatteryAlarmApp
             }
             catch
             {
-                // Fallback to defaults on corrupt file
+                // Silently fallback to defaults
             }
 
-            // Sync with actual registry startup state
             settings.StartWithWindows = settings.IsStartupRegistryEnabled();
-
             return settings;
         }
 
@@ -112,10 +138,7 @@ namespace BatteryAlarmApp
                 string json = ToJsonString();
                 File.WriteAllText(path, json, Encoding.UTF8);
             }
-            catch
-            {
-                // Silently handle write failures
-            }
+            catch { }
 
             ApplyStartupRegistry(StartWithWindows);
         }
@@ -148,7 +171,6 @@ namespace BatteryAlarmApp
                     {
                         if (enable)
                         {
-                            // Include argument --minimized if requested
                             string cmd = "\"" + ExePath + "\" --minimized";
                             key.SetValue(AppRegistryName, cmd);
                         }
@@ -180,7 +202,11 @@ namespace BatteryAlarmApp
             sb.AppendLine(string.Format("  \"ShowNotifications\": {0},", ShowNotifications.ToString().ToLower()));
             sb.AppendLine(string.Format("  \"StartWithWindows\": {0},", StartWithWindows.ToString().ToLower()));
             sb.AppendLine(string.Format("  \"StartMinimized\": {0},", StartMinimized.ToString().ToLower()));
-            sb.AppendLine(string.Format("  \"MinimizeToTrayOnClose\": {0}", MinimizeToTrayOnClose.ToString().ToLower()));
+            sb.AppendLine(string.Format("  \"MinimizeToTrayOnClose\": {0},", MinimizeToTrayOnClose.ToString().ToLower()));
+            sb.AppendLine(string.Format("  \"QuietHoursEnabled\": {0},", QuietHoursEnabled.ToString().ToLower()));
+            sb.AppendLine(string.Format("  \"QuietHoursStart\": {0},", QuietHoursStart));
+            sb.AppendLine(string.Format("  \"QuietHoursEnd\": {0},", QuietHoursEnd));
+            sb.AppendLine(string.Format("  \"FullChargeAlert\": {0}", FullChargeAlert.ToString().ToLower()));
             sb.AppendLine("}");
             return sb.ToString();
         }
@@ -200,6 +226,11 @@ namespace BatteryAlarmApp
             StartMinimized = ParseBool(json, "StartMinimized", StartMinimized);
             MinimizeToTrayOnClose = ParseBool(json, "MinimizeToTrayOnClose", MinimizeToTrayOnClose);
 
+            QuietHoursEnabled = ParseBool(json, "QuietHoursEnabled", QuietHoursEnabled);
+            QuietHoursStart = ParseInt(json, "QuietHoursStart", QuietHoursStart);
+            QuietHoursEnd = ParseInt(json, "QuietHoursEnd", QuietHoursEnd);
+            FullChargeAlert = ParseBool(json, "FullChargeAlert", FullChargeAlert);
+
             // Validation guards
             if (LowThreshold < 5) LowThreshold = 5;
             if (LowThreshold > 50) LowThreshold = 50;
@@ -207,6 +238,8 @@ namespace BatteryAlarmApp
             if (HighThreshold > 100) HighThreshold = 100;
             if (AlarmIntervalSeconds < 2) AlarmIntervalSeconds = 2;
             if (AlarmIntervalSeconds > 60) AlarmIntervalSeconds = 60;
+            if (QuietHoursStart < 0 || QuietHoursStart > 23) QuietHoursStart = 22;
+            if (QuietHoursEnd < 0 || QuietHoursEnd > 23) QuietHoursEnd = 7;
         }
 
         private static int ParseInt(string json, string key, int defaultValue)

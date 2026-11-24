@@ -31,6 +31,7 @@ namespace BatteryAlarmApp.Tests
             Console.WriteLine("==================================================");
 
             TestSettingsSerialization();
+            TestQuietHoursLogic();
             TestSoundWaveGeneration();
             TestBatteryQuery();
             TestAlarmScenarios();
@@ -54,6 +55,10 @@ namespace BatteryAlarmApp.Tests
             s.SoundType = "Chime";
             s.LoopAlarm = false;
             s.AlarmIntervalSeconds = 10;
+            s.QuietHoursEnabled = true;
+            s.QuietHoursStart = 23;
+            s.QuietHoursEnd = 6;
+            s.FullChargeAlert = true;
             s.Save();
 
             string configPath = AppSettings.GetConfigFilePath();
@@ -65,6 +70,9 @@ namespace BatteryAlarmApp.Tests
             Assert(loaded.SoundType == "Chime", "SoundType loaded correctly: " + loaded.SoundType);
             Assert(loaded.LoopAlarm == false, "LoopAlarm loaded correctly: " + loaded.LoopAlarm);
             Assert(loaded.AlarmIntervalSeconds == 10, "AlarmIntervalSeconds loaded correctly: " + loaded.AlarmIntervalSeconds);
+            Assert(loaded.QuietHoursEnabled == true, "QuietHoursEnabled loaded correctly: " + loaded.QuietHoursEnabled);
+            Assert(loaded.QuietHoursStart == 23, "QuietHoursStart loaded correctly: " + loaded.QuietHoursStart);
+            Assert(loaded.QuietHoursEnd == 6, "QuietHoursEnd loaded correctly: " + loaded.QuietHoursEnd);
 
             // Test boundary clamping
             s.LowThreshold = 2; // Should clamp to 5
@@ -74,9 +82,24 @@ namespace BatteryAlarmApp.Tests
             Assert(clamped.LowThreshold == 5, "LowThreshold clamped to min 5");
             Assert(clamped.HighThreshold == 100, "HighThreshold clamped to max 100");
 
-            // Reset defaults
             s.SetDefaults();
             s.Save();
+        }
+
+        static void TestQuietHoursLogic()
+        {
+            Console.WriteLine("\n--- Testing Quiet Hours / Night Mute Logic ---");
+            AppSettings s = new AppSettings();
+            s.QuietHoursEnabled = false;
+            Assert(!s.IsInQuietHours(), "Quiet hours disabled returns false");
+
+            s.QuietHoursEnabled = true;
+            s.QuietHoursStart = 22;
+            s.QuietHoursEnd = 7;
+            // Over night test
+            int h = DateTime.Now.Hour;
+            bool expected = (h >= 22 || h < 7);
+            Assert(s.IsInQuietHours() == expected, "Quiet hours evaluation matches expected schedule for current hour (" + h + ":00)");
         }
 
         static void TestSoundWaveGeneration()
@@ -91,7 +114,6 @@ namespace BatteryAlarmApp.Tests
             byte[] siren = AudioAlert.GenerateSirenWav();
             Assert(siren != null && siren.Length > 1000, "Siren WAV generated (bytes: " + (siren != null ? siren.Length : 0) + ")");
 
-            // Verify WAV header validity
             Assert(chime[0] == 'R' && chime[1] == 'I' && chime[2] == 'F' && chime[3] == 'F', "WAV header starts with 'RIFF'");
             Assert(chime[8] == 'W' && chime[9] == 'A' && chime[10] == 'V' && chime[11] == 'E', "WAV format is 'WAVE'");
         }
@@ -120,30 +142,10 @@ namespace BatteryAlarmApp.Tests
             AudioAlert audio = new AudioAlert();
             BatteryMonitor monitor = new BatteryMonitor(settings, audio);
 
-            // Test Scenario 1: Low Battery (10% and Unplugged)
-            // Should trigger LowBattery alarm
-            bool lowAlarmFired = false;
-            monitor.OnAlarmTriggered += delegate(ActiveAlarmState state, int percent, string msg)
-            {
-                if (state == ActiveAlarmState.LowBattery && percent == 10)
-                    lowAlarmFired = true;
-            };
-
-            // Test Scenario 2: Connecting charger when Low Battery is active
-            // Should automatically dismiss alarm!
-            bool chargerConnectedDismissed = false;
-            monitor.OnAlarmDismissed += delegate(string reason)
-            {
-                if (reason == "Charger connected")
-                    chargerConnectedDismissed = true;
-            };
-
-            // We simulate conditions by checking how monitor evaluates snapshots
             Assert(settings.EnableLowAlarm && 10 <= settings.LowThreshold, "Scenario 1 condition check: 10% <= 15% (Low alarm condition met)");
             Assert(settings.EnableHighAlarm && 95 >= settings.HighThreshold, "Scenario 2 condition check: 95% >= 90% (High alarm condition met)");
             Assert(!(50 <= settings.LowThreshold) && !(50 >= settings.HighThreshold), "Scenario 3 condition check: 50% is within normal safe range (No alarm)");
 
-            // Test Desktop PC without battery
             BatterySnapshot desktopSnap = new BatterySnapshot();
             desktopSnap.HasBattery = false;
             desktopSnap.IsPluggedIn = true;
@@ -151,7 +153,6 @@ namespace BatteryAlarmApp.Tests
             Assert(!desktopSnap.HasBattery && desktopSnap.GetStatusDescription().Contains("No Battery"),
                 "Scenario 4 check: Desktop / No Battery handled gracefully");
 
-            // Test Snooze logic
             monitor.SnoozeAlarm(5);
             Assert(!audio.IsPlaying, "Scenario 5 check: Snooze immediately stops audio playback");
         }

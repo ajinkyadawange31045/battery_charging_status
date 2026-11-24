@@ -16,7 +16,7 @@ if not exist %CSC% (
 )
 
 echo Compiling using built-in Windows C# Compiler...
-%CSC% /target:winexe /optimize+ /platform:anycpu /win32icon:app.ico /out:BatteryGuard.exe /r:System.dll /r:System.Drawing.dll /r:System.Windows.Forms.dll /r:System.Data.dll src\AssemblyInfo.cs src\AppSettings.cs src\AudioAlert.cs src\BatteryMonitor.cs src\BatteryWidget.cs src\SystemTrayManager.cs src\MainForm.cs src\Program.cs
+%CSC% /target:winexe /optimize+ /platform:anycpu /win32icon:app.ico /out:BatteryGuard.exe /r:System.dll /r:System.Drawing.dll /r:System.Windows.Forms.dll /r:System.Data.dll /r:System.Xml.dll src\AssemblyInfo.cs src\AppSettings.cs src\AudioAlert.cs src\BatteryHealthService.cs src\BatteryMonitor.cs src\BatteryWidget.cs src\SystemTrayManager.cs src\MainForm.cs src\Program.cs
 
 if %ERRORLEVEL% equ 0 (
     echo.
