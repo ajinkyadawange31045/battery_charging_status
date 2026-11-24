@@ -127,21 +127,55 @@ namespace BatteryAlarmApp
             if (cardW < 460) cardW = 460;
 
             // 1. Header with title & badges
+            Panel headerPanel = new Panel();
+            headerPanel.Location = new Point(margin, curY);
+            headerPanel.Size = new Size(cardW, 58);
+            headerPanel.BackColor = Color.Transparent;
+            headerPanel.Paint += delegate(object s, PaintEventArgs e)
+            {
+                Graphics g = e.Graphics;
+                g.SmoothingMode = SmoothingMode.AntiAlias;
+
+                // Draw sleek mini battery icon
+                RectangleF bRect = new RectangleF(0, 4, 30, 18);
+                using (GraphicsPath bp = BatteryWidget.RoundedRect(bRect, 4f))
+                {
+                    using (SolidBrush bg = new SolidBrush(Color.FromArgb(16, 185, 129)))
+                        g.FillPath(bg, bp);
+                    using (Pen p = new Pen(Color.FromArgb(5, 150, 105), 1.5f))
+                        g.DrawPath(p, bp);
+                }
+                g.FillRectangle(new SolidBrush(Color.FromArgb(5, 150, 105)), 30, 9, 3, 8);
+
+                // Lightning bolt inside mini battery
+                PointF[] bolt = new PointF[] {
+                    new PointF(16, 7),
+                    new PointF(11, 13),
+                    new PointF(15, 13),
+                    new PointF(14, 19),
+                    new PointF(19, 13),
+                    new PointF(15, 13)
+                };
+                g.FillPolygon(Brushes.White, bolt);
+            };
+
             Label lblTitle = new Label();
-            lblTitle.Text = "🔋 BatteryGuard Pro";
+            lblTitle.Text = "BatteryGuard Pro";
             lblTitle.Font = new Font("Segoe UI", 17f, FontStyle.Bold);
             lblTitle.ForeColor = Color.FromArgb(15, 23, 42);
-            lblTitle.Location = new Point(margin, curY);
+            lblTitle.Location = new Point(40, 0);
             lblTitle.AutoSize = true;
-            _contentPanel.Controls.Add(lblTitle);
+            headerPanel.Controls.Add(lblTitle);
 
             Label lblSubtitle = new Label();
             lblSubtitle.Text = "Intelligent charging protection • Battery wear prevention • Ultra-lightweight";
             lblSubtitle.Font = new Font("Segoe UI", 9.2f, FontStyle.Regular);
             lblSubtitle.ForeColor = Color.FromArgb(100, 116, 139);
-            lblSubtitle.Location = new Point(margin + 2, curY + 32);
+            lblSubtitle.Location = new Point(42, 32);
             lblSubtitle.AutoSize = true;
-            _contentPanel.Controls.Add(lblSubtitle);
+            headerPanel.Controls.Add(lblSubtitle);
+
+            _contentPanel.Controls.Add(headerPanel);
 
             curY += 66;
 
@@ -162,7 +196,7 @@ namespace BatteryAlarmApp
             };
 
             _bannerLabel = new Label();
-            _bannerLabel.Text = "⚠️ LOW BATTERY ALERT: Please connect charger!";
+            _bannerLabel.Text = "LOW BATTERY ALERT: Please connect charger!";
             _bannerLabel.Font = new Font("Segoe UI", 10.5f, FontStyle.Bold);
             _bannerLabel.ForeColor = Color.White;
             _bannerLabel.Location = new Point(16, 12);
@@ -170,7 +204,7 @@ namespace BatteryAlarmApp
             _bannerPanel.Controls.Add(_bannerLabel);
 
             _btnBannerStop = new ModernButton();
-            _btnBannerStop.Text = "⏹ Stop Alarm";
+            _btnBannerStop.Text = "Stop Alarm";
             _btnBannerStop.Location = new Point(16, 46);
             _btnBannerStop.Size = new Size(130, 34);
             _btnBannerStop.NormalColor = Color.FromArgb(15, 23, 42);
@@ -180,7 +214,7 @@ namespace BatteryAlarmApp
             _bannerPanel.Controls.Add(_btnBannerStop);
 
             _btnBannerSnooze5 = new ModernButton();
-            _btnBannerSnooze5.Text = "⏰ Snooze 5m";
+            _btnBannerSnooze5.Text = "Snooze 5m";
             _btnBannerSnooze5.Location = new Point(156, 46);
             _btnBannerSnooze5.Size = new Size(120, 34);
             _btnBannerSnooze5.NormalColor = Color.FromArgb(220, 38, 38);
@@ -190,7 +224,7 @@ namespace BatteryAlarmApp
             _bannerPanel.Controls.Add(_btnBannerSnooze5);
 
             _btnBannerSnooze10 = new ModernButton();
-            _btnBannerSnooze10.Text = "⏰ Snooze 10m";
+            _btnBannerSnooze10.Text = "Snooze 10m";
             _btnBannerSnooze10.Location = new Point(286, 46);
             _btnBannerSnooze10.Size = new Size(120, 34);
             _btnBannerSnooze10.NormalColor = Color.FromArgb(220, 38, 38);
@@ -214,7 +248,7 @@ namespace BatteryAlarmApp
 
             // 4. Battery Health & Wear Stats Card
             _cardHealth = CreateWhiteCard(margin, curY, cardW, 108);
-            AddCardHeader(_cardHealth, "📊 Battery Health & Diagnostics", Color.FromArgb(2, 132, 199)); // Sky Blue
+            AddCardHeader(_cardHealth, "Battery Health & Diagnostics", Color.FromArgb(2, 132, 199)); // Sky Blue
 
             _lblHealthPercent = new Label();
             _lblHealthPercent.Text = "Health: Checking...";
@@ -249,7 +283,7 @@ namespace BatteryAlarmApp
             _cardHealth.Controls.Add(_lblCapacities);
 
             _btnOpenReport = new ModernButton();
-            _btnOpenReport.Text = "📄 Official Report";
+            _btnOpenReport.Text = "Official Report";
             _btnOpenReport.Location = new Point(cardW - 150, 42);
             _btnOpenReport.Size = new Size(134, 34);
             _btnOpenReport.NormalColor = Color.FromArgb(241, 245, 249);
@@ -267,7 +301,7 @@ namespace BatteryAlarmApp
 
             // 5. Threshold Settings Card
             _cardThresholds = CreateWhiteCard(margin, curY, cardW, 165);
-            AddCardHeader(_cardThresholds, "⚡ Charging Alarm Thresholds", Color.FromArgb(16, 185, 129));
+            AddCardHeader(_cardThresholds, "Charging Alarm Thresholds", Color.FromArgb(16, 185, 129));
 
             // Low Battery Row
             _chkLowAlarm = new CheckBox();
@@ -345,7 +379,7 @@ namespace BatteryAlarmApp
 
             // 6. Sound & Alarm Settings Card
             _cardSound = CreateWhiteCard(margin, curY, cardW, 160);
-            AddCardHeader(_cardSound, "🔊 Sound & Notification Preferences", Color.FromArgb(79, 70, 229)); // Indigo
+            AddCardHeader(_cardSound, "Sound & Notification Preferences", Color.FromArgb(79, 70, 229)); // Indigo
 
             Label lblSound = new Label();
             lblSound.Text = "Alarm Sound:";
@@ -362,9 +396,9 @@ namespace BatteryAlarmApp
             _cardSound.Controls.Add(_cboSound);
 
             _btnTestSound = new ModernButton();
-            _btnTestSound.Text = "▶ Test";
+            _btnTestSound.Text = "Play Test";
             _btnTestSound.Location = new Point(295, 37);
-            _btnTestSound.Size = new Size(72, 28);
+            _btnTestSound.Size = new Size(82, 28);
             _btnTestSound.NormalColor = Color.FromArgb(79, 70, 229);
             _btnTestSound.HoverColor = Color.FromArgb(99, 102, 241);
             _btnTestSound.PressedColor = Color.FromArgb(67, 56, 202);
@@ -412,9 +446,9 @@ namespace BatteryAlarmApp
 
             curY += 174;
 
-            // 7. Smart Features (Quiet Hours & 100% Unplug Reminder)
+            // 7. Smart Rules (Quiet Hours & 100% Unplug Reminder)
             _cardSmart = CreateWhiteCard(margin, curY, cardW, 115);
-            AddCardHeader(_cardSmart, "🌙 Smart Rules & Quiet Hours", Color.FromArgb(147, 51, 234)); // Purple
+            AddCardHeader(_cardSmart, "Smart Rules & Quiet Hours", Color.FromArgb(147, 51, 234)); // Purple
 
             _chkQuietHours = new CheckBox();
             _chkQuietHours.Text = "Quiet Hours (Mute audio at night):";
@@ -459,7 +493,7 @@ namespace BatteryAlarmApp
 
             // 8. System & Startup Behavior Card
             _cardSystem = CreateWhiteCard(margin, curY, cardW, 126);
-            AddCardHeader(_cardSystem, "⚙️ Startup & Behavior", Color.FromArgb(71, 85, 105));
+            AddCardHeader(_cardSystem, "Startup & System Behavior", Color.FromArgb(71, 85, 105));
 
             _chkAutoStart = new CheckBox();
             _chkAutoStart.Text = "Start automatically when Windows boots";
@@ -503,7 +537,7 @@ namespace BatteryAlarmApp
             };
 
             Label lblEcoTitle = new Label();
-            lblEcoTitle.Text = "🌱 Zero-Bloat Efficiency: 0.0% CPU • ~18 MB RAM • < 0.001% Battery Impact";
+            lblEcoTitle.Text = "Zero-Bloat Efficiency: 0.0% CPU • ~18 MB RAM • < 0.001% Battery Impact";
             lblEcoTitle.Font = new Font("Segoe UI", 9.5f, FontStyle.Bold);
             lblEcoTitle.ForeColor = Color.FromArgb(21, 128, 61); // Green 700
             lblEcoTitle.Location = new Point(16, 14);
@@ -525,7 +559,7 @@ namespace BatteryAlarmApp
 
             // 10. Footer Action Buttons
             _btnSave = new ModernButton();
-            _btnSave.Text = "💾 Save Settings";
+            _btnSave.Text = "Save Settings";
             _btnSave.Location = new Point(margin, curY);
             _btnSave.Size = new Size(155, 38);
             _btnSave.NormalColor = Color.FromArgb(16, 185, 129);
@@ -535,7 +569,7 @@ namespace BatteryAlarmApp
             _contentPanel.Controls.Add(_btnSave);
 
             _btnReset = new ModernButton();
-            _btnReset.Text = "🔄 Reset Defaults";
+            _btnReset.Text = "Reset Defaults";
             _btnReset.Location = new Point(margin + 165, curY);
             _btnReset.Size = new Size(145, 38);
             _btnReset.NormalColor = Color.FromArgb(241, 245, 249);
@@ -547,7 +581,7 @@ namespace BatteryAlarmApp
             _contentPanel.Controls.Add(_btnReset);
 
             _btnMinimize = new ModernButton();
-            _btnMinimize.Text = "📥 Hide to Tray";
+            _btnMinimize.Text = "Hide to Tray";
             _btnMinimize.Location = new Point(margin + 320, curY);
             _btnMinimize.Size = new Size(165, 38);
             _btnMinimize.NormalColor = Color.FromArgb(37, 99, 235);
@@ -580,11 +614,25 @@ namespace BatteryAlarmApp
 
         private void AddCardHeader(Panel card, string title, Color accent)
         {
+            card.Paint += delegate(object s, PaintEventArgs e)
+            {
+                Graphics g = e.Graphics;
+                g.SmoothingMode = SmoothingMode.AntiAlias;
+
+                // Sleek vertical colored accent pill
+                RectangleF pillRect = new RectangleF(14, 12, 4, 15);
+                using (GraphicsPath pp = BatteryWidget.RoundedRect(pillRect, 2f))
+                using (SolidBrush pb = new SolidBrush(accent))
+                {
+                    g.FillPath(pb, pp);
+                }
+            };
+
             Label lbl = new Label();
             lbl.Text = title;
             lbl.Font = new Font("Segoe UI", 10.5f, FontStyle.Bold);
             lbl.ForeColor = Color.FromArgb(15, 23, 42); // Deep slate
-            lbl.Location = new Point(14, 10);
+            lbl.Location = new Point(24, 10);
             lbl.AutoSize = true;
             card.Controls.Add(lbl);
         }
@@ -779,13 +827,19 @@ namespace BatteryAlarmApp
                 return;
             }
 
-            _bannerLabel.Text = message;
             if (state == ActiveAlarmState.LowBattery)
             {
+                _bannerLabel.Text = string.Format("LOW BATTERY ALERT ({0}%): Connect charger now.", percent);
                 _bannerPanel.BackColor = Color.FromArgb(239, 68, 68); // Red
+            }
+            else if (state == ActiveAlarmState.FullCharge)
+            {
+                _bannerLabel.Text = "FULL CHARGE (100%): Unplug to protect battery health.";
+                _bannerPanel.BackColor = Color.FromArgb(16, 185, 129); // Emerald
             }
             else
             {
+                _bannerLabel.Text = string.Format("CHARGE THRESHOLD ({0}%): Unplug charger now.", percent);
                 _bannerPanel.BackColor = Color.FromArgb(16, 185, 129); // Emerald
             }
             _bannerPanel.Visible = true;

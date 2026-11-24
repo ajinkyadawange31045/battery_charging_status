@@ -18,11 +18,25 @@ Choose either option below to get started immediately:
 
 | Format | Download Link | Description |
 | :--- | :--- | :--- |
-| **Direct Executable** | [⬇️ **Download BatteryGuard.exe**](release/BatteryGuard.exe?raw=true) *(~69 KB)* | Ready-to-run single file. No install, no setup required. |
+| **Direct Executable** | [⬇️ **Download BatteryGuard.exe**](release/BatteryGuard.exe?raw=true) *(~72 KB)* | Ready-to-run single file. No install, no setup required. |
 | **ZIP Package** | [📦 **Download BatteryGuard-v1.0.0-Portable.zip**](release/BatteryGuard-v1.0.0-Portable.zip?raw=true) *(~35 KB)* | Includes `BatteryGuard.exe` + Quick Start Guide. |
 
 > [!TIP]
 > **No installation needed**: Simply download `BatteryGuard.exe`, place it anywhere on your laptop (e.g. `Desktop`, `Documents`, or `C:\Tools\`), and double-click to launch. You can also copy it to a USB flash drive and run it on any Windows laptop!
+
+---
+
+## 📸 Screenshots & Visual Interface
+
+<div align="center">
+
+### Modern White Windows 11 Fluent Interface
+
+| 🖥️ Live Dashboard & Health Diagnostics | ⚠️ Low Battery Warning Banner | ⚡ Charge Protection Alert |
+| :---: | :---: | :---: |
+| <img src="docs/screenshots/dashboard.png" width="270" alt="BatteryGuard Pro Dashboard" /> | <img src="docs/screenshots/alert_low_battery.png" width="270" alt="Low Battery Warning" /> | <img src="docs/screenshots/alert_high_battery.png" width="270" alt="High Charge Alert" /> |
+
+</div>
 
 ---
 

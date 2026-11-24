@@ -234,15 +234,15 @@ namespace BatteryAlarmApp
 
                 if (targetAlarm == ActiveAlarmState.LowBattery)
                 {
-                    message = string.Format("⚠️ Low Battery Alert ({0}%)! Please connect charger.", snap.Percent);
+                    message = string.Format("Low Battery Alert ({0}%)! Please connect charger.", snap.Percent);
                 }
                 else if (targetAlarm == ActiveAlarmState.FullCharge)
                 {
-                    message = "⚡ Battery 100% Fully Charged! Unplug to preserve battery lifespan.";
+                    message = "Battery 100% Fully Charged! Unplug to preserve battery lifespan.";
                 }
                 else
                 {
-                    message = string.Format("⚡ Charge Threshold Reached ({0}%)! Please unplug charger.", snap.Percent);
+                    message = string.Format("Charge Threshold Reached ({0}%)! Please unplug charger.", snap.Percent);
                 }
 
                 if (inQuietHours)
