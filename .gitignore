@@ -1,0 +1,7 @@
+# Build outputs
+*.obj
+*.pdb
+*.write_test
+
+# User settings (portable)
+battery_settings.json
