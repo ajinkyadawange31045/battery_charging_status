@@ -3,6 +3,7 @@ using System.Drawing;
 using System.Drawing.Drawing2D;
 using System.IO;
 using System.Windows.Forms;
+using BatteryAlarmApp.Controls;
 
 namespace BatteryAlarmApp
 {
@@ -12,6 +13,7 @@ namespace BatteryAlarmApp
         private readonly AudioAlert _audio;
         private readonly BatteryMonitor _monitor;
         private SystemTrayManager _tray;
+        private AlertPopupForm _activePopup = null;
 
         // UI Panels & Layout
         private Panel _contentPanel;
@@ -19,47 +21,43 @@ namespace BatteryAlarmApp
         private Label _bannerLabel;
         private ModernButton _btnBannerStop;
         private ModernButton _btnBannerSnooze5;
-        private ModernButton _btnBannerSnooze10;
 
-        private Panel _cardStatus;
+        private ModernCard _cardHero;
         private BatteryWidget _batteryWidget;
+        private Label _lblHealthBadge;
+        private Label _lblCyclesBadge;
+        private ModernButton _btnOfficialReport;
 
-        private Panel _cardHealth;
-        private Label _lblHealthPercent;
-        private Label _lblHealthSub;
-        private Label _lblCycles;
-        private Label _lblCapacities;
-        private ModernButton _btnOpenReport;
+        private ModernCard _cardThresholds;
+        private ModernToggle _toggleLow;
+        private ModernSlider _sliderLow;
+        private Label _lblLowPill;
+        private ModernToggle _toggleHigh;
+        private ModernSlider _sliderHigh;
+        private Label _lblHighPill;
 
-        private Panel _cardThresholds;
-        private TrackBar _trackLow;
-        private Label _lblLowValue;
-        private CheckBox _chkLowAlarm;
-        private TrackBar _trackHigh;
-        private Label _lblHighValue;
-        private CheckBox _chkHighAlarm;
-
-        private Panel _cardSound;
+        private ModernCard _cardAudio;
         private ComboBox _cboSound;
         private TextBox _txtCustomSound;
         private ModernButton _btnBrowseSound;
         private ModernButton _btnTestSound;
-        private CheckBox _chkLoop;
+        private ModernToggle _toggleLoop;
         private ComboBox _cboInterval;
 
-        private Panel _cardSmart;
-        private CheckBox _chkQuietHours;
+        private ModernCard _cardSmart;
+        private ModernToggle _toggleQuiet;
         private ComboBox _cboQuietStart;
         private ComboBox _cboQuietEnd;
-        private CheckBox _chkFullCharge;
+        private Panel _pnlQuietHoursTime;
+        private ModernToggle _toggleFullCharge;
 
-        private Panel _cardSystem;
-        private CheckBox _chkAutoStart;
-        private CheckBox _chkStartMin;
-        private CheckBox _chkCloseToTray;
-        private CheckBox _chkNotify;
+        private ModernCard _cardSystem;
+        private ModernToggle _toggleAutoStart;
+        private ModernToggle _toggleStartMin;
+        private ModernToggle _toggleCloseToTray;
+        private ModernToggle _toggleNotify;
 
-        private Panel _cardEfficiency;
+        private ModernCard _cardEfficiency;
 
         private ModernButton _btnSave;
         private ModernButton _btnReset;
@@ -96,9 +94,9 @@ namespace BatteryAlarmApp
 
         private void InitializeForm()
         {
-            Text = "BatteryGuard Pro — Smart Battery Monitor";
-            Size = new Size(580, 800);
-            MinimumSize = new Size(520, 650);
+            Text = "BatteryGuard Pro";
+            Size = new Size(590, 840);
+            MinimumSize = new Size(540, 700);
             StartPosition = FormStartPosition.CenterScreen;
             BackColor = Color.FromArgb(248, 250, 252); // Soft White / Slate 50
             ForeColor = Color.FromArgb(15, 23, 42);   // Deep Slate 900
@@ -123,47 +121,45 @@ namespace BatteryAlarmApp
 
             int curY = 18;
             int margin = 20;
-            int cardW = _contentPanel.ClientSize.Width - (margin * 2);
+            int cardW = _contentPanel.ClientSize.Width - (margin * 2) - 8;
             if (cardW < 460) cardW = 460;
 
-            // 1. Header with title & badges
+            // 1. Header with custom vector badge
             Panel headerPanel = new Panel();
             headerPanel.Location = new Point(margin, curY);
-            headerPanel.Size = new Size(cardW, 58);
+            headerPanel.Size = new Size(cardW, 56);
             headerPanel.BackColor = Color.Transparent;
             headerPanel.Paint += delegate(object s, PaintEventArgs e)
             {
                 Graphics g = e.Graphics;
                 g.SmoothingMode = SmoothingMode.AntiAlias;
 
-                // Draw sleek mini battery icon
-                RectangleF bRect = new RectangleF(0, 4, 30, 18);
-                using (GraphicsPath bp = BatteryWidget.RoundedRect(bRect, 4f))
+                RectangleF bRect = new RectangleF(0, 4, 32, 20);
+                using (GraphicsPath bp = BatteryWidget.RoundedRect(bRect, 5f))
                 {
                     using (SolidBrush bg = new SolidBrush(Color.FromArgb(16, 185, 129)))
                         g.FillPath(bg, bp);
                     using (Pen p = new Pen(Color.FromArgb(5, 150, 105), 1.5f))
                         g.DrawPath(p, bp);
                 }
-                g.FillRectangle(new SolidBrush(Color.FromArgb(5, 150, 105)), 30, 9, 3, 8);
+                g.FillRectangle(new SolidBrush(Color.FromArgb(5, 150, 105)), 32, 10, 3, 8);
 
-                // Lightning bolt inside mini battery
                 PointF[] bolt = new PointF[] {
-                    new PointF(16, 7),
-                    new PointF(11, 13),
-                    new PointF(15, 13),
-                    new PointF(14, 19),
-                    new PointF(19, 13),
-                    new PointF(15, 13)
+                    new PointF(17, 7),
+                    new PointF(12, 14),
+                    new PointF(16, 14),
+                    new PointF(15, 21),
+                    new PointF(20, 14),
+                    new PointF(16, 14)
                 };
                 g.FillPolygon(Brushes.White, bolt);
             };
 
             Label lblTitle = new Label();
             lblTitle.Text = "BatteryGuard Pro";
-            lblTitle.Font = new Font("Segoe UI", 17f, FontStyle.Bold);
+            lblTitle.Font = new Font("Segoe UI", 18f, FontStyle.Bold);
             lblTitle.ForeColor = Color.FromArgb(15, 23, 42);
-            lblTitle.Location = new Point(40, 0);
+            lblTitle.Location = new Point(44, 0);
             lblTitle.AutoSize = true;
             headerPanel.Controls.Add(lblTitle);
 
@@ -171,24 +167,23 @@ namespace BatteryAlarmApp
             lblSubtitle.Text = "Intelligent charging protection • Battery wear prevention • Ultra-lightweight";
             lblSubtitle.Font = new Font("Segoe UI", 9.2f, FontStyle.Regular);
             lblSubtitle.ForeColor = Color.FromArgb(100, 116, 139);
-            lblSubtitle.Location = new Point(42, 32);
+            lblSubtitle.Location = new Point(46, 32);
             lblSubtitle.AutoSize = true;
             headerPanel.Controls.Add(lblSubtitle);
 
             _contentPanel.Controls.Add(headerPanel);
-
             curY += 66;
 
-            // 2. Active Alarm Alert Banner (Hidden by default)
+            // 2. Active Alert Banner
             _bannerPanel = new Panel();
             _bannerPanel.Location = new Point(margin, curY);
-            _bannerPanel.Size = new Size(cardW, 95);
+            _bannerPanel.Size = new Size(cardW, 90);
             _bannerPanel.BackColor = Color.FromArgb(239, 68, 68);
             _bannerPanel.Visible = false;
             _bannerPanel.Paint += delegate(object s, PaintEventArgs e)
             {
                 e.Graphics.SmoothingMode = SmoothingMode.AntiAlias;
-                using (GraphicsPath p = BatteryWidget.RoundedRect(new RectangleF(0, 0, _bannerPanel.Width - 1, _bannerPanel.Height - 1), 9f))
+                using (GraphicsPath p = BatteryWidget.RoundedRect(new RectangleF(0, 0, _bannerPanel.Width - 1, _bannerPanel.Height - 1), 10f))
                 using (Pen pen = new Pen(Color.FromArgb(254, 202, 202), 1.5f))
                 {
                     e.Graphics.DrawPath(pen, p);
@@ -196,16 +191,16 @@ namespace BatteryAlarmApp
             };
 
             _bannerLabel = new Label();
-            _bannerLabel.Text = "LOW BATTERY ALERT: Please connect charger!";
-            _bannerLabel.Font = new Font("Segoe UI", 10.5f, FontStyle.Bold);
+            _bannerLabel.Text = "LOW BATTERY ALERT: Please connect charger now!";
+            _bannerLabel.Font = new Font("Segoe UI", 11f, FontStyle.Bold);
             _bannerLabel.ForeColor = Color.White;
             _bannerLabel.Location = new Point(16, 12);
-            _bannerLabel.Size = new Size(cardW - 32, 24);
+            _bannerLabel.Size = new Size(cardW - 32, 26);
             _bannerPanel.Controls.Add(_bannerLabel);
 
             _btnBannerStop = new ModernButton();
             _btnBannerStop.Text = "Stop Alarm";
-            _btnBannerStop.Location = new Point(16, 46);
+            _btnBannerStop.Location = new Point(16, 44);
             _btnBannerStop.Size = new Size(130, 34);
             _btnBannerStop.NormalColor = Color.FromArgb(15, 23, 42);
             _btnBannerStop.HoverColor = Color.FromArgb(30, 41, 59);
@@ -214,413 +209,540 @@ namespace BatteryAlarmApp
             _bannerPanel.Controls.Add(_btnBannerStop);
 
             _btnBannerSnooze5 = new ModernButton();
-            _btnBannerSnooze5.Text = "Snooze 5m";
-            _btnBannerSnooze5.Location = new Point(156, 46);
-            _btnBannerSnooze5.Size = new Size(120, 34);
+            _btnBannerSnooze5.Text = "Snooze 5 Minutes";
+            _btnBannerSnooze5.Location = new Point(156, 44);
+            _btnBannerSnooze5.Size = new Size(150, 34);
             _btnBannerSnooze5.NormalColor = Color.FromArgb(220, 38, 38);
             _btnBannerSnooze5.HoverColor = Color.FromArgb(185, 28, 28);
             _btnBannerSnooze5.PressedColor = Color.FromArgb(153, 27, 27);
             _btnBannerSnooze5.Click += delegate { _monitor.SnoozeAlarm(5); };
             _bannerPanel.Controls.Add(_btnBannerSnooze5);
 
-            _btnBannerSnooze10 = new ModernButton();
-            _btnBannerSnooze10.Text = "Snooze 10m";
-            _btnBannerSnooze10.Location = new Point(286, 46);
-            _btnBannerSnooze10.Size = new Size(120, 34);
-            _btnBannerSnooze10.NormalColor = Color.FromArgb(220, 38, 38);
-            _btnBannerSnooze10.HoverColor = Color.FromArgb(185, 28, 28);
-            _btnBannerSnooze10.PressedColor = Color.FromArgb(153, 27, 27);
-            _btnBannerSnooze10.Click += delegate { _monitor.SnoozeAlarm(10); };
-            _bannerPanel.Controls.Add(_btnBannerSnooze10);
-
             _contentPanel.Controls.Add(_bannerPanel);
 
-            // 3. Live Battery Status Card (White Card)
-            _cardStatus = CreateWhiteCard(margin, curY, cardW, 138);
+            // 3. Hero Battery Card
+            _cardHero = new ModernCard();
+            _cardHero.Location = new Point(margin, curY);
+            _cardHero.Size = new Size(cardW, 172);
+
             _batteryWidget = new BatteryWidget();
             _batteryWidget.Location = new Point(12, 10);
-            _batteryWidget.Size = new Size(cardW - 24, 118);
+            _batteryWidget.Size = new Size(cardW - 24, 116);
             _batteryWidget.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
-            _cardStatus.Controls.Add(_batteryWidget);
-            _contentPanel.Controls.Add(_cardStatus);
+            _cardHero.Controls.Add(_batteryWidget);
 
-            curY += 152;
-
-            // 4. Battery Health & Wear Stats Card
-            _cardHealth = CreateWhiteCard(margin, curY, cardW, 108);
-            AddCardHeader(_cardHealth, "Battery Health & Diagnostics", Color.FromArgb(2, 132, 199)); // Sky Blue
-
-            _lblHealthPercent = new Label();
-            _lblHealthPercent.Text = "Health: Checking...";
-            _lblHealthPercent.Font = new Font("Segoe UI", 12f, FontStyle.Bold);
-            _lblHealthPercent.ForeColor = Color.FromArgb(16, 185, 129);
-            _lblHealthPercent.Location = new Point(16, 38);
-            _lblHealthPercent.AutoSize = true;
-            _cardHealth.Controls.Add(_lblHealthPercent);
-
-            _lblHealthSub = new Label();
-            _lblHealthSub.Text = "Based on full charge capacity vs factory design capacity";
-            _lblHealthSub.Font = new Font("Segoe UI", 8.8f, FontStyle.Regular);
-            _lblHealthSub.ForeColor = Color.FromArgb(100, 116, 139);
-            _lblHealthSub.Location = new Point(16, 62);
-            _lblHealthSub.AutoSize = true;
-            _cardHealth.Controls.Add(_lblHealthSub);
-
-            _lblCycles = new Label();
-            _lblCycles.Text = "Cycles: --";
-            _lblCycles.Font = new Font("Segoe UI", 9.5f, FontStyle.Bold);
-            _lblCycles.ForeColor = Color.FromArgb(71, 85, 105);
-            _lblCycles.Location = new Point(16, 82);
-            _lblCycles.AutoSize = true;
-            _cardHealth.Controls.Add(_lblCycles);
-
-            _lblCapacities = new Label();
-            _lblCapacities.Text = "";
-            _lblCapacities.Font = new Font("Segoe UI", 8.8f, FontStyle.Regular);
-            _lblCapacities.ForeColor = Color.FromArgb(100, 116, 139);
-            _lblCapacities.Location = new Point(120, 83);
-            _lblCapacities.AutoSize = true;
-            _cardHealth.Controls.Add(_lblCapacities);
-
-            _btnOpenReport = new ModernButton();
-            _btnOpenReport.Text = "Official Report";
-            _btnOpenReport.Location = new Point(cardW - 150, 42);
-            _btnOpenReport.Size = new Size(134, 34);
-            _btnOpenReport.NormalColor = Color.FromArgb(241, 245, 249);
-            _btnOpenReport.HoverColor = Color.FromArgb(226, 232, 240);
-            _btnOpenReport.PressedColor = Color.FromArgb(203, 213, 225);
-            _btnOpenReport.ForeColor = Color.FromArgb(15, 23, 42);
-            _btnOpenReport.BorderColor = Color.FromArgb(203, 213, 225);
-            _btnOpenReport.Anchor = AnchorStyles.Top | AnchorStyles.Right;
-            _btnOpenReport.Click += delegate { BatteryHealthService.OpenOfficialWindowsReport(); };
-            _cardHealth.Controls.Add(_btnOpenReport);
-
-            _contentPanel.Controls.Add(_cardHealth);
-
-            curY += 122;
-
-            // 5. Threshold Settings Card
-            _cardThresholds = CreateWhiteCard(margin, curY, cardW, 165);
-            AddCardHeader(_cardThresholds, "Charging Alarm Thresholds", Color.FromArgb(16, 185, 129));
-
-            // Low Battery Row
-            _chkLowAlarm = new CheckBox();
-            _chkLowAlarm.Text = "Low Battery Alarm:";
-            _chkLowAlarm.Font = new Font("Segoe UI", 9.5f, FontStyle.Bold);
-            _chkLowAlarm.ForeColor = Color.FromArgb(220, 38, 38);
-            _chkLowAlarm.Location = new Point(16, 40);
-            _chkLowAlarm.Size = new Size(160, 24);
-            _cardThresholds.Controls.Add(_chkLowAlarm);
-
-            _trackLow = new TrackBar();
-            _trackLow.Minimum = 5;
-            _trackLow.Maximum = 40;
-            _trackLow.TickFrequency = 5;
-            _trackLow.SmallChange = 1;
-            _trackLow.LargeChange = 5;
-            _trackLow.Location = new Point(180, 36);
-            _trackLow.Size = new Size(210, 34);
-            _trackLow.ValueChanged += delegate
+            // Diagnostics row in hero card
+            Panel diagRow = new Panel();
+            diagRow.Location = new Point(16, 130);
+            diagRow.Size = new Size(cardW - 32, 32);
+            diagRow.BackColor = Color.FromArgb(248, 250, 252);
+            diagRow.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
+            diagRow.Paint += delegate(object s, PaintEventArgs e)
             {
-                _lblLowValue.Text = _trackLow.Value.ToString() + "%";
+                e.Graphics.SmoothingMode = SmoothingMode.AntiAlias;
+                RectangleF r = new RectangleF(0, 0, diagRow.Width - 1, diagRow.Height - 1);
+                using (GraphicsPath p = BatteryWidget.RoundedRect(r, 6f))
+                using (Pen pen = new Pen(Color.FromArgb(226, 232, 240), 1f))
+                {
+                    e.Graphics.DrawPath(pen, p);
+                }
             };
-            _cardThresholds.Controls.Add(_trackLow);
 
-            _lblLowValue = new Label();
-            _lblLowValue.Text = "15%";
-            _lblLowValue.Font = new Font("Segoe UI", 12f, FontStyle.Bold);
-            _lblLowValue.ForeColor = Color.FromArgb(220, 38, 38);
-            _lblLowValue.Location = new Point(400, 38);
-            _lblLowValue.Size = new Size(60, 24);
-            _cardThresholds.Controls.Add(_lblLowValue);
+            _lblHealthBadge = new Label();
+            _lblHealthBadge.Text = "Battery Diagnostics Ready";
+            _lblHealthBadge.Font = new Font("Segoe UI", 9f, FontStyle.Bold);
+            _lblHealthBadge.ForeColor = Color.FromArgb(16, 185, 129);
+            _lblHealthBadge.Location = new Point(12, 7);
+            _lblHealthBadge.AutoSize = true;
+            diagRow.Controls.Add(_lblHealthBadge);
 
-            // High Battery Row
-            _chkHighAlarm = new CheckBox();
-            _chkHighAlarm.Text = "High Battery Alarm:";
-            _chkHighAlarm.Font = new Font("Segoe UI", 9.5f, FontStyle.Bold);
-            _chkHighAlarm.ForeColor = Color.FromArgb(5, 150, 105);
-            _chkHighAlarm.Location = new Point(16, 88);
-            _chkHighAlarm.Size = new Size(160, 24);
-            _cardThresholds.Controls.Add(_chkHighAlarm);
+            _lblCyclesBadge = new Label();
+            _lblCyclesBadge.Text = "";
+            _lblCyclesBadge.Font = new Font("Segoe UI", 9f, FontStyle.Regular);
+            _lblCyclesBadge.ForeColor = Color.FromArgb(100, 116, 139);
+            _lblCyclesBadge.Location = new Point(180, 7);
+            _lblCyclesBadge.AutoSize = true;
+            diagRow.Controls.Add(_lblCyclesBadge);
 
-            _trackHigh = new TrackBar();
-            _trackHigh.Minimum = 60;
-            _trackHigh.Maximum = 100;
-            _trackHigh.TickFrequency = 5;
-            _trackHigh.SmallChange = 1;
-            _trackHigh.LargeChange = 5;
-            _trackHigh.Location = new Point(180, 84);
-            _trackHigh.Size = new Size(210, 34);
-            _trackHigh.ValueChanged += delegate
+            _btnOfficialReport = new ModernButton();
+            _btnOfficialReport.Text = "Official Report";
+            _btnOfficialReport.Font = new Font("Segoe UI", 8.8f, FontStyle.Bold);
+            _btnOfficialReport.Location = new Point(diagRow.Width - 120, 3);
+            _btnOfficialReport.Size = new Size(114, 26);
+            _btnOfficialReport.NormalColor = Color.White;
+            _btnOfficialReport.HoverColor = Color.FromArgb(241, 245, 249);
+            _btnOfficialReport.PressedColor = Color.FromArgb(226, 232, 240);
+            _btnOfficialReport.ForeColor = Color.FromArgb(15, 23, 42);
+            _btnOfficialReport.BorderColor = Color.FromArgb(203, 213, 225);
+            _btnOfficialReport.Anchor = AnchorStyles.Top | AnchorStyles.Right;
+            _btnOfficialReport.Click += delegate { BatteryHealthService.OpenOfficialWindowsReport(); };
+            diagRow.Controls.Add(_btnOfficialReport);
+
+            _cardHero.Controls.Add(diagRow);
+            _contentPanel.Controls.Add(_cardHero);
+            curY += 186;
+
+            // 4. Alert Thresholds Card (Modern Fluent Card with Sliders & Toggles)
+            _cardThresholds = new ModernCard();
+            _cardThresholds.Location = new Point(margin, curY);
+            _cardThresholds.Size = new Size(cardW, 196);
+            AddCardSectionHeader(_cardThresholds, "Charging Thresholds", Color.FromArgb(16, 185, 129));
+
+            // Low Threshold Section
+            int subY = 40;
+            Label lblLowTitle = new Label();
+            lblLowTitle.Text = "Low Battery Alarm";
+            lblLowTitle.Font = new Font("Segoe UI", 10f, FontStyle.Bold);
+            lblLowTitle.ForeColor = Color.FromArgb(15, 23, 42);
+            lblLowTitle.Location = new Point(16, subY);
+            lblLowTitle.AutoSize = true;
+            _cardThresholds.Controls.Add(lblLowTitle);
+
+            Label lblLowDesc = new Label();
+            lblLowDesc.Text = "Sounds alarm when battery drops while on battery power";
+            lblLowDesc.Font = new Font("Segoe UI", 8.8f, FontStyle.Regular);
+            lblLowDesc.ForeColor = Color.FromArgb(100, 116, 139);
+            lblLowDesc.Location = new Point(16, subY + 20);
+            lblLowDesc.AutoSize = true;
+            _cardThresholds.Controls.Add(lblLowDesc);
+
+            _toggleLow = new ModernToggle();
+            _toggleLow.Location = new Point(cardW - 64, subY + 2);
+            _toggleLow.OnColor = Color.FromArgb(239, 68, 68);
+            _toggleLow.Anchor = AnchorStyles.Top | AnchorStyles.Right;
+            _toggleLow.CheckedChanged += delegate
             {
-                _lblHighValue.Text = _trackHigh.Value.ToString() + "%";
+                _sliderLow.Enabled = _toggleLow.Checked;
+                _lblLowPill.ForeColor = _toggleLow.Checked ? Color.FromArgb(220, 38, 38) : Color.FromArgb(148, 163, 184);
             };
-            _cardThresholds.Controls.Add(_trackHigh);
+            _cardThresholds.Controls.Add(_toggleLow);
 
-            _lblHighValue = new Label();
-            _lblHighValue.Text = "90%";
-            _lblHighValue.Font = new Font("Segoe UI", 12f, FontStyle.Bold);
-            _lblHighValue.ForeColor = Color.FromArgb(5, 150, 105);
-            _lblHighValue.Location = new Point(400, 86);
-            _lblHighValue.Size = new Size(60, 24);
-            _cardThresholds.Controls.Add(_lblHighValue);
+            // Low Slider Row
+            subY += 44;
+            _sliderLow = new ModernSlider();
+            _sliderLow.Minimum = 5;
+            _sliderLow.Maximum = 40;
+            _sliderLow.AccentColor = Color.FromArgb(239, 68, 68);
+            _sliderLow.Location = new Point(16, subY);
+            _sliderLow.Size = new Size(cardW - 110, 26);
+            _sliderLow.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
+            _sliderLow.ValueChanged += delegate
+            {
+                _lblLowPill.Text = _sliderLow.Value.ToString() + "%";
+            };
+            _cardThresholds.Controls.Add(_sliderLow);
 
-            Label lblThresholdHint = new Label();
-            lblThresholdHint.Text = "Recommended: 90% preserves lithium battery health; 15% prevents unexpected shutdown.";
-            lblThresholdHint.Font = new Font("Segoe UI", 8.8f, FontStyle.Italic);
-            lblThresholdHint.ForeColor = Color.FromArgb(100, 116, 139);
-            lblThresholdHint.Location = new Point(16, 134);
-            lblThresholdHint.Size = new Size(cardW - 32, 20);
-            _cardThresholds.Controls.Add(lblThresholdHint);
+            _lblLowPill = new Label();
+            _lblLowPill.Text = "15%";
+            _lblLowPill.Font = new Font("Segoe UI", 11f, FontStyle.Bold);
+            _lblLowPill.ForeColor = Color.FromArgb(220, 38, 38);
+            _lblLowPill.Location = new Point(cardW - 80, subY - 2);
+            _lblLowPill.Size = new Size(60, 26);
+            _lblLowPill.Anchor = AnchorStyles.Top | AnchorStyles.Right;
+            _lblLowPill.TextAlign = ContentAlignment.MiddleRight;
+            _cardThresholds.Controls.Add(_lblLowPill);
+
+            // Divider Line
+            subY += 34;
+            Panel div1 = new Panel();
+            div1.Location = new Point(16, subY);
+            div1.Size = new Size(cardW - 32, 1);
+            div1.BackColor = Color.FromArgb(241, 245, 249);
+            div1.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
+            _cardThresholds.Controls.Add(div1);
+
+            // High Threshold Section
+            subY += 10;
+            Label lblHighTitle = new Label();
+            lblHighTitle.Text = "High Battery Protection";
+            lblHighTitle.Font = new Font("Segoe UI", 10f, FontStyle.Bold);
+            lblHighTitle.ForeColor = Color.FromArgb(15, 23, 42);
+            lblHighTitle.Location = new Point(16, subY);
+            lblHighTitle.AutoSize = true;
+            _cardThresholds.Controls.Add(lblHighTitle);
+
+            Label lblHighDesc = new Label();
+            lblHighDesc.Text = "Alerts to unplug charger when limit is reached to preserve battery cells";
+            lblHighDesc.Font = new Font("Segoe UI", 8.8f, FontStyle.Regular);
+            lblHighDesc.ForeColor = Color.FromArgb(100, 116, 139);
+            lblHighDesc.Location = new Point(16, subY + 20);
+            lblHighDesc.AutoSize = true;
+            _cardThresholds.Controls.Add(lblHighDesc);
+
+            _toggleHigh = new ModernToggle();
+            _toggleHigh.Location = new Point(cardW - 64, subY + 2);
+            _toggleHigh.OnColor = Color.FromArgb(16, 185, 129);
+            _toggleHigh.Anchor = AnchorStyles.Top | AnchorStyles.Right;
+            _toggleHigh.CheckedChanged += delegate
+            {
+                _sliderHigh.Enabled = _toggleHigh.Checked;
+                _lblHighPill.ForeColor = _toggleHigh.Checked ? Color.FromArgb(16, 185, 129) : Color.FromArgb(148, 163, 184);
+            };
+            _cardThresholds.Controls.Add(_toggleHigh);
+
+            // High Slider Row
+            subY += 44;
+            _sliderHigh = new ModernSlider();
+            _sliderHigh.Minimum = 60;
+            _sliderHigh.Maximum = 100;
+            _sliderHigh.AccentColor = Color.FromArgb(16, 185, 129);
+            _sliderHigh.Location = new Point(16, subY);
+            _sliderHigh.Size = new Size(cardW - 110, 26);
+            _sliderHigh.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
+            _sliderHigh.ValueChanged += delegate
+            {
+                _lblHighPill.Text = _sliderHigh.Value.ToString() + "%";
+            };
+            _cardThresholds.Controls.Add(_sliderHigh);
+
+            _lblHighPill = new Label();
+            _lblHighPill.Text = "90%";
+            _lblHighPill.Font = new Font("Segoe UI", 11f, FontStyle.Bold);
+            _lblHighPill.ForeColor = Color.FromArgb(16, 185, 129);
+            _lblHighPill.Location = new Point(cardW - 80, subY - 2);
+            _lblHighPill.Size = new Size(60, 26);
+            _lblHighPill.Anchor = AnchorStyles.Top | AnchorStyles.Right;
+            _lblHighPill.TextAlign = ContentAlignment.MiddleRight;
+            _cardThresholds.Controls.Add(_lblHighPill);
 
             _contentPanel.Controls.Add(_cardThresholds);
+            curY += 210;
 
-            curY += 178;
+            // 5. Sound & Notification Preferences Card
+            _cardAudio = new ModernCard();
+            _cardAudio.Location = new Point(margin, curY);
+            _cardAudio.Size = new Size(cardW, 140);
+            AddCardSectionHeader(_cardAudio, "Alert Sound & Notifications", Color.FromArgb(79, 70, 229));
 
-            // 6. Sound & Alarm Settings Card
-            _cardSound = CreateWhiteCard(margin, curY, cardW, 160);
-            AddCardHeader(_cardSound, "Sound & Notification Preferences", Color.FromArgb(79, 70, 229)); // Indigo
+            int aY = 40;
+            Label lblSoundTitle = new Label();
+            lblSoundTitle.Text = "Alarm Sound Tone";
+            lblSoundTitle.Font = new Font("Segoe UI", 10f, FontStyle.Bold);
+            lblSoundTitle.ForeColor = Color.FromArgb(15, 23, 42);
+            lblSoundTitle.Location = new Point(16, aY);
+            lblSoundTitle.AutoSize = true;
+            _cardAudio.Controls.Add(lblSoundTitle);
 
-            Label lblSound = new Label();
-            lblSound.Text = "Alarm Sound:";
-            lblSound.Location = new Point(16, 42);
-            lblSound.AutoSize = true;
-            _cardSound.Controls.Add(lblSound);
-
-            _cboSound = new ComboBox();
-            _cboSound.DropDownStyle = ComboBoxStyle.DropDownList;
-            _cboSound.Items.AddRange(new object[] { "Alarm (Digital Beep)", "Chime (Melodic)", "Siren (Urgent)", "System Alert", "Custom WAV File" });
-            _cboSound.Location = new Point(115, 38);
-            _cboSound.Size = new Size(170, 26);
+            _cboSound = CreateFlatComboBox();
+            _cboSound.Items.AddRange(new object[] { "Alarm (Digital Beep)", "Chime (Melodic)", "Siren (Urgent Alert)", "System Alert", "Custom WAV File" });
+            _cboSound.Location = new Point(cardW - 275, aY);
+            _cboSound.Size = new Size(175, 28);
+            _cboSound.Anchor = AnchorStyles.Top | AnchorStyles.Right;
             _cboSound.SelectedIndexChanged += OnSoundTypeChanged;
-            _cardSound.Controls.Add(_cboSound);
+            _cardAudio.Controls.Add(_cboSound);
 
             _btnTestSound = new ModernButton();
             _btnTestSound.Text = "Play Test";
-            _btnTestSound.Location = new Point(295, 37);
-            _btnTestSound.Size = new Size(82, 28);
+            _btnTestSound.Font = new Font("Segoe UI", 9f, FontStyle.Bold);
+            _btnTestSound.Location = new Point(cardW - 90, aY - 1);
+            _btnTestSound.Size = new Size(74, 30);
             _btnTestSound.NormalColor = Color.FromArgb(79, 70, 229);
             _btnTestSound.HoverColor = Color.FromArgb(99, 102, 241);
             _btnTestSound.PressedColor = Color.FromArgb(67, 56, 202);
+            _btnTestSound.Anchor = AnchorStyles.Top | AnchorStyles.Right;
             _btnTestSound.Click += delegate
             {
                 string st = GetSelectedSoundType();
                 _audio.TestSound(st, _txtCustomSound.Text);
             };
-            _cardSound.Controls.Add(_btnTestSound);
+            _cardAudio.Controls.Add(_btnTestSound);
 
             _txtCustomSound = new TextBox();
-            _txtCustomSound.Location = new Point(16, 74);
-            _txtCustomSound.Size = new Size(344, 25);
+            _txtCustomSound.Location = new Point(16, aY + 34);
+            _txtCustomSound.Size = new Size(cardW - 120, 25);
+            _txtCustomSound.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
             _txtCustomSound.Visible = false;
-            _cardSound.Controls.Add(_txtCustomSound);
+            _cardAudio.Controls.Add(_txtCustomSound);
 
             _btnBrowseSound = new ModernButton();
             _btnBrowseSound.Text = "Browse...";
-            _btnBrowseSound.Location = new Point(368, 73);
-            _btnBrowseSound.Size = new Size(88, 27);
+            _btnBrowseSound.Location = new Point(cardW - 95, aY + 33);
+            _btnBrowseSound.Size = new Size(79, 27);
             _btnBrowseSound.NormalColor = Color.FromArgb(241, 245, 249);
             _btnBrowseSound.HoverColor = Color.FromArgb(226, 232, 240);
             _btnBrowseSound.PressedColor = Color.FromArgb(203, 213, 225);
             _btnBrowseSound.ForeColor = Color.FromArgb(15, 23, 42);
             _btnBrowseSound.BorderColor = Color.FromArgb(203, 213, 225);
+            _btnBrowseSound.Anchor = AnchorStyles.Top | AnchorStyles.Right;
             _btnBrowseSound.Visible = false;
             _btnBrowseSound.Click += OnBrowseCustomSound;
-            _cardSound.Controls.Add(_btnBrowseSound);
+            _cardAudio.Controls.Add(_btnBrowseSound);
 
-            _chkLoop = new CheckBox();
-            _chkLoop.Text = "Repeat alarm every:";
-            _chkLoop.Location = new Point(16, 115);
-            _chkLoop.AutoSize = true;
-            _chkLoop.CheckedChanged += delegate { _cboInterval.Enabled = _chkLoop.Checked; };
-            _cardSound.Controls.Add(_chkLoop);
+            // Repeat Sound Row
+            aY += 46;
+            Label lblRepeatTitle = new Label();
+            lblRepeatTitle.Text = "Repeat Alert Interval";
+            lblRepeatTitle.Font = new Font("Segoe UI", 10f, FontStyle.Bold);
+            lblRepeatTitle.ForeColor = Color.FromArgb(15, 23, 42);
+            lblRepeatTitle.Location = new Point(16, aY);
+            lblRepeatTitle.AutoSize = true;
+            _cardAudio.Controls.Add(lblRepeatTitle);
 
-            _cboInterval = new ComboBox();
-            _cboInterval.DropDownStyle = ComboBoxStyle.DropDownList;
+            _cboInterval = CreateFlatComboBox();
             _cboInterval.Items.AddRange(new object[] { "3 seconds", "5 seconds", "10 seconds", "15 seconds", "30 seconds" });
-            _cboInterval.Location = new Point(165, 112);
-            _cboInterval.Size = new Size(115, 26);
-            _cardSound.Controls.Add(_cboInterval);
+            _cboInterval.Location = new Point(cardW - 185, aY);
+            _cboInterval.Size = new Size(110, 28);
+            _cboInterval.Anchor = AnchorStyles.Top | AnchorStyles.Right;
+            _cardAudio.Controls.Add(_cboInterval);
 
-            _contentPanel.Controls.Add(_cardSound);
+            _toggleLoop = new ModernToggle();
+            _toggleLoop.Location = new Point(cardW - 64, aY + 2);
+            _toggleLoop.Anchor = AnchorStyles.Top | AnchorStyles.Right;
+            _toggleLoop.CheckedChanged += delegate { _cboInterval.Enabled = _toggleLoop.Checked; };
+            _cardAudio.Controls.Add(_toggleLoop);
 
-            curY += 174;
+            _contentPanel.Controls.Add(_cardAudio);
+            curY += 154;
 
-            // 7. Smart Rules (Quiet Hours & 100% Unplug Reminder)
-            _cardSmart = CreateWhiteCard(margin, curY, cardW, 115);
-            AddCardHeader(_cardSmart, "Smart Rules & Quiet Hours", Color.FromArgb(147, 51, 234)); // Purple
+            // 6. Smart Rules (Quiet Hours & Full Charge Alert)
+            _cardSmart = new ModernCard();
+            _cardSmart.Location = new Point(margin, curY);
+            _cardSmart.Size = new Size(cardW, 150);
+            AddCardSectionHeader(_cardSmart, "Smart Rules & Quiet Hours", Color.FromArgb(147, 51, 234));
 
-            _chkQuietHours = new CheckBox();
-            _chkQuietHours.Text = "Quiet Hours (Mute audio at night):";
-            _chkQuietHours.Location = new Point(16, 40);
-            _chkQuietHours.AutoSize = true;
-            _chkQuietHours.CheckedChanged += delegate
+            int sY = 40;
+            Label lblQuietTitle = new Label();
+            lblQuietTitle.Text = "Quiet Hours (Night Mute)";
+            lblQuietTitle.Font = new Font("Segoe UI", 10f, FontStyle.Bold);
+            lblQuietTitle.ForeColor = Color.FromArgb(15, 23, 42);
+            lblQuietTitle.Location = new Point(16, sY);
+            lblQuietTitle.AutoSize = true;
+            _cardSmart.Controls.Add(lblQuietTitle);
+
+            Label lblQuietDesc = new Label();
+            lblQuietDesc.Text = "Mutes sound alerts during sleep or meetings (shows silent popup only)";
+            lblQuietDesc.Font = new Font("Segoe UI", 8.8f, FontStyle.Regular);
+            lblQuietDesc.ForeColor = Color.FromArgb(100, 116, 139);
+            lblQuietDesc.Location = new Point(16, sY + 20);
+            lblQuietDesc.AutoSize = true;
+            _cardSmart.Controls.Add(lblQuietDesc);
+
+            _toggleQuiet = new ModernToggle();
+            _toggleQuiet.Location = new Point(cardW - 64, sY + 2);
+            _toggleQuiet.OnColor = Color.FromArgb(147, 51, 234);
+            _toggleQuiet.Anchor = AnchorStyles.Top | AnchorStyles.Right;
+            _toggleQuiet.CheckedChanged += delegate
             {
-                _cboQuietStart.Enabled = _chkQuietHours.Checked;
-                _cboQuietEnd.Enabled = _chkQuietHours.Checked;
+                _pnlQuietHoursTime.Visible = _toggleQuiet.Checked;
             };
-            _cardSmart.Controls.Add(_chkQuietHours);
+            _cardSmart.Controls.Add(_toggleQuiet);
 
-            _cboQuietStart = new ComboBox();
-            _cboQuietStart.DropDownStyle = ComboBoxStyle.DropDownList;
+            // Sub row for hours
+            _pnlQuietHoursTime = new Panel();
+            _pnlQuietHoursTime.Location = new Point(16, sY + 42);
+            _pnlQuietHoursTime.Size = new Size(cardW - 32, 32);
+            _pnlQuietHoursTime.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
+
+            Label lblFrom = new Label();
+            lblFrom.Text = "Mute from:";
+            lblFrom.Font = new Font("Segoe UI", 9f, FontStyle.Regular);
+            lblFrom.ForeColor = Color.FromArgb(71, 85, 105);
+            lblFrom.Location = new Point(0, 6);
+            lblFrom.AutoSize = true;
+            _pnlQuietHoursTime.Controls.Add(lblFrom);
+
+            _cboQuietStart = CreateFlatComboBox();
             PopulateHoursDropdown(_cboQuietStart);
-            _cboQuietStart.Location = new Point(236, 38);
-            _cboQuietStart.Size = new Size(85, 26);
-            _cardSmart.Controls.Add(_cboQuietStart);
+            _cboQuietStart.Location = new Point(72, 2);
+            _cboQuietStart.Size = new Size(95, 26);
+            _pnlQuietHoursTime.Controls.Add(_cboQuietStart);
 
             Label lblTo = new Label();
-            lblTo.Text = "to";
-            lblTo.Location = new Point(328, 41);
+            lblTo.Text = "until:";
+            lblTo.Font = new Font("Segoe UI", 9f, FontStyle.Regular);
+            lblTo.ForeColor = Color.FromArgb(71, 85, 105);
+            lblTo.Location = new Point(175, 6);
             lblTo.AutoSize = true;
-            _cardSmart.Controls.Add(lblTo);
+            _pnlQuietHoursTime.Controls.Add(lblTo);
 
-            _cboQuietEnd = new ComboBox();
-            _cboQuietEnd.DropDownStyle = ComboBoxStyle.DropDownList;
+            _cboQuietEnd = CreateFlatComboBox();
             PopulateHoursDropdown(_cboQuietEnd);
-            _cboQuietEnd.Location = new Point(348, 38);
-            _cboQuietEnd.Size = new Size(85, 26);
-            _cardSmart.Controls.Add(_cboQuietEnd);
+            _cboQuietEnd.Location = new Point(210, 2);
+            _cboQuietEnd.Size = new Size(95, 26);
+            _pnlQuietHoursTime.Controls.Add(_cboQuietEnd);
 
-            _chkFullCharge = new CheckBox();
-            _chkFullCharge.Text = "100% Full Charge Reminder (Alerts to unplug when saturation is reached)";
-            _chkFullCharge.Location = new Point(16, 75);
-            _chkFullCharge.AutoSize = true;
-            _cardSmart.Controls.Add(_chkFullCharge);
+            _cardSmart.Controls.Add(_pnlQuietHoursTime);
+
+            // Full Charge Row
+            sY += 66;
+            Label lblFullTitle = new Label();
+            lblFullTitle.Text = "100% Full Charge Advisory";
+            lblFullTitle.Font = new Font("Segoe UI", 10f, FontStyle.Bold);
+            lblFullTitle.ForeColor = Color.FromArgb(15, 23, 42);
+            lblFullTitle.Location = new Point(16, sY);
+            lblFullTitle.AutoSize = true;
+            _cardSmart.Controls.Add(lblFullTitle);
+
+            Label lblFullDesc = new Label();
+            lblFullDesc.Text = "Alerts to disconnect AC when battery hits full 100% saturation";
+            lblFullDesc.Font = new Font("Segoe UI", 8.8f, FontStyle.Regular);
+            lblFullDesc.ForeColor = Color.FromArgb(100, 116, 139);
+            lblFullDesc.Location = new Point(16, sY + 20);
+            lblFullDesc.AutoSize = true;
+            _cardSmart.Controls.Add(lblFullDesc);
+
+            _toggleFullCharge = new ModernToggle();
+            _toggleFullCharge.Location = new Point(cardW - 64, sY + 2);
+            _toggleFullCharge.Anchor = AnchorStyles.Top | AnchorStyles.Right;
+            _cardSmart.Controls.Add(_toggleFullCharge);
 
             _contentPanel.Controls.Add(_cardSmart);
+            curY += 164;
 
-            curY += 128;
+            // 7. System Preferences Card
+            _cardSystem = new ModernCard();
+            _cardSystem.Location = new Point(margin, curY);
+            _cardSystem.Size = new Size(cardW, 140);
+            AddCardSectionHeader(_cardSystem, "System & Startup Preferences", Color.FromArgb(71, 85, 105));
 
-            // 8. System & Startup Behavior Card
-            _cardSystem = CreateWhiteCard(margin, curY, cardW, 126);
-            AddCardHeader(_cardSystem, "Startup & System Behavior", Color.FromArgb(71, 85, 105));
+            int sysY = 40;
+            // Row 1: Start with Windows
+            Label lblSys1 = new Label();
+            lblSys1.Text = "Start with Windows automatically";
+            lblSys1.Font = new Font("Segoe UI", 9.5f, FontStyle.Bold);
+            lblSys1.ForeColor = Color.FromArgb(15, 23, 42);
+            lblSys1.Location = new Point(16, sysY);
+            lblSys1.AutoSize = true;
+            _cardSystem.Controls.Add(lblSys1);
 
-            _chkAutoStart = new CheckBox();
-            _chkAutoStart.Text = "Start automatically when Windows boots";
-            _chkAutoStart.Location = new Point(16, 38);
-            _chkAutoStart.AutoSize = true;
-            _cardSystem.Controls.Add(_chkAutoStart);
+            _toggleAutoStart = new ModernToggle();
+            _toggleAutoStart.Location = new Point(cardW - 64, sysY);
+            _toggleAutoStart.Anchor = AnchorStyles.Top | AnchorStyles.Right;
+            _cardSystem.Controls.Add(_toggleAutoStart);
 
-            _chkStartMin = new CheckBox();
-            _chkStartMin.Text = "Start minimized to system tray";
-            _chkStartMin.Location = new Point(16, 64);
-            _chkStartMin.AutoSize = true;
-            _cardSystem.Controls.Add(_chkStartMin);
+            // Row 2: Start Minimized
+            sysY += 30;
+            Label lblSys2 = new Label();
+            lblSys2.Text = "Start minimized to background tray";
+            lblSys2.Font = new Font("Segoe UI", 9.5f, FontStyle.Regular);
+            lblSys2.ForeColor = Color.FromArgb(71, 85, 105);
+            lblSys2.Location = new Point(16, sysY);
+            lblSys2.AutoSize = true;
+            _cardSystem.Controls.Add(lblSys2);
 
-            _chkCloseToTray = new CheckBox();
-            _chkCloseToTray.Text = "Minimize to tray when close (X) is clicked";
-            _chkCloseToTray.Location = new Point(16, 90);
-            _chkCloseToTray.AutoSize = true;
-            _cardSystem.Controls.Add(_chkCloseToTray);
+            _toggleStartMin = new ModernToggle();
+            _toggleStartMin.Location = new Point(cardW - 64, sysY);
+            _toggleStartMin.Anchor = AnchorStyles.Top | AnchorStyles.Right;
+            _cardSystem.Controls.Add(_toggleStartMin);
 
-            _chkNotify = new CheckBox();
-            _chkNotify.Text = "Show Windows balloon / tray alerts";
-            _chkNotify.Location = new Point(275, 38);
-            _chkNotify.AutoSize = true;
-            _cardSystem.Controls.Add(_chkNotify);
+            // Row 3: Close minimizes to tray
+            sysY += 30;
+            Label lblSys3 = new Label();
+            lblSys3.Text = "Close button [X] minimizes to tray (keeps monitoring active)";
+            lblSys3.Font = new Font("Segoe UI", 9.5f, FontStyle.Regular);
+            lblSys3.ForeColor = Color.FromArgb(71, 85, 105);
+            lblSys3.Location = new Point(16, sysY);
+            lblSys3.AutoSize = true;
+            _cardSystem.Controls.Add(lblSys3);
 
+            _toggleCloseToTray = new ModernToggle();
+            _toggleCloseToTray.Location = new Point(cardW - 64, sysY);
+            _toggleCloseToTray.Anchor = AnchorStyles.Top | AnchorStyles.Right;
+            _cardSystem.Controls.Add(_toggleCloseToTray);
+
+            // Row 4: Windows Notification Alerts
+            sysY += 30;
+            Label lblSys4 = new Label();
+            lblSys4.Text = "Show Windows balloon & toast notifications";
+            lblSys4.Font = new Font("Segoe UI", 9.5f, FontStyle.Regular);
+            lblSys4.ForeColor = Color.FromArgb(71, 85, 105);
+            lblSys4.Location = new Point(16, sysY);
+            lblSys4.AutoSize = true;
+            _cardSystem.Controls.Add(lblSys4);
+
+            _toggleNotify = new ModernToggle();
+            _toggleNotify.Location = new Point(cardW - 64, sysY);
+            _toggleNotify.Anchor = AnchorStyles.Top | AnchorStyles.Right;
+            _cardSystem.Controls.Add(_toggleNotify);
+
+            _cardSystem.Height = sysY + 44;
             _contentPanel.Controls.Add(_cardSystem);
+            curY += _cardSystem.Height + 14;
 
-            curY += 140;
+            // 8. Eco Efficiency Banner
+            _cardEfficiency = new ModernCard();
+            _cardEfficiency.Location = new Point(margin, curY);
+            _cardEfficiency.Size = new Size(cardW, 74);
+            _cardEfficiency.BackColor = Color.FromArgb(240, 253, 244);
+            _cardEfficiency.BorderColor = Color.FromArgb(187, 247, 208);
 
-            // 9. Resource Footprint Card (Energy & RAM statement)
-            _cardEfficiency = CreateWhiteCard(margin, curY, cardW, 85);
-            _cardEfficiency.BackColor = Color.FromArgb(240, 253, 244); // Very soft mint green #F0FDF4
-            _cardEfficiency.Paint += delegate(object s, PaintEventArgs e)
-            {
-                e.Graphics.SmoothingMode = SmoothingMode.AntiAlias;
-                using (GraphicsPath path = BatteryWidget.RoundedRect(new RectangleF(0, 0, _cardEfficiency.Width - 1, _cardEfficiency.Height - 1), 9f))
-                using (Pen pen = new Pen(Color.FromArgb(187, 247, 208), 1.2f))
-                {
-                    e.Graphics.DrawPath(pen, path);
-                }
-            };
+            Label lblEco1 = new Label();
+            lblEco1.Text = "Zero-Bloat Performance: 0.0% CPU • ~18 MB RAM • < 0.001% Battery Impact";
+            lblEco1.Font = new Font("Segoe UI", 9.5f, FontStyle.Bold);
+            lblEco1.ForeColor = Color.FromArgb(21, 128, 61);
+            lblEco1.Location = new Point(16, 12);
+            lblEco1.AutoSize = true;
+            _cardEfficiency.Controls.Add(lblEco1);
 
-            Label lblEcoTitle = new Label();
-            lblEcoTitle.Text = "Zero-Bloat Efficiency: 0.0% CPU • ~18 MB RAM • < 0.001% Battery Impact";
-            lblEcoTitle.Font = new Font("Segoe UI", 9.5f, FontStyle.Bold);
-            lblEcoTitle.ForeColor = Color.FromArgb(21, 128, 61); // Green 700
-            lblEcoTitle.Location = new Point(16, 14);
-            lblEcoTitle.AutoSize = true;
-            _cardEfficiency.Controls.Add(lblEcoTitle);
-
-            Label lblEcoSub = new Label();
-            lblEcoSub.Text = "Engineered in pure C# with native Windows ACPI events. It sleeps between updates and consumes virtually zero battery power.";
-            lblEcoSub.Font = new Font("Segoe UI", 8.8f, FontStyle.Regular);
-            lblEcoSub.ForeColor = Color.FromArgb(74, 222, 128); // Green 600
-            lblEcoSub.ForeColor = Color.FromArgb(22, 101, 52);
-            lblEcoSub.Location = new Point(16, 38);
-            lblEcoSub.Size = new Size(cardW - 32, 36);
-            _cardEfficiency.Controls.Add(lblEcoSub);
+            Label lblEco2 = new Label();
+            lblEco2.Text = "Native C# event-driven architecture. Sleeps between checks and uses virtually zero laptop energy.";
+            lblEco2.Font = new Font("Segoe UI", 8.8f, FontStyle.Regular);
+            lblEco2.ForeColor = Color.FromArgb(22, 101, 52);
+            lblEco2.Location = new Point(16, 36);
+            lblEco2.Size = new Size(cardW - 32, 28);
+            _cardEfficiency.Controls.Add(lblEco2);
 
             _contentPanel.Controls.Add(_cardEfficiency);
+            curY += 86;
 
-            curY += 98;
-
-            // 10. Footer Action Buttons
+            // 9. Footer Action Buttons
             _btnSave = new ModernButton();
             _btnSave.Text = "Save Settings";
             _btnSave.Location = new Point(margin, curY);
-            _btnSave.Size = new Size(155, 38);
+            _btnSave.Size = new Size(160, 42);
             _btnSave.NormalColor = Color.FromArgb(16, 185, 129);
             _btnSave.HoverColor = Color.FromArgb(5, 150, 105);
             _btnSave.PressedColor = Color.FromArgb(4, 120, 87);
+            _btnSave.CornerRadius = 8f;
             _btnSave.Click += OnSaveClicked;
             _contentPanel.Controls.Add(_btnSave);
 
             _btnReset = new ModernButton();
             _btnReset.Text = "Reset Defaults";
-            _btnReset.Location = new Point(margin + 165, curY);
-            _btnReset.Size = new Size(145, 38);
-            _btnReset.NormalColor = Color.FromArgb(241, 245, 249);
-            _btnReset.HoverColor = Color.FromArgb(226, 232, 240);
-            _btnReset.PressedColor = Color.FromArgb(203, 213, 225);
+            _btnReset.Location = new Point(margin + 172, curY);
+            _btnReset.Size = new Size(140, 42);
+            _btnReset.NormalColor = Color.White;
+            _btnReset.HoverColor = Color.FromArgb(241, 245, 249);
+            _btnReset.PressedColor = Color.FromArgb(226, 232, 240);
             _btnReset.ForeColor = Color.FromArgb(51, 65, 85);
             _btnReset.BorderColor = Color.FromArgb(203, 213, 225);
+            _btnReset.CornerRadius = 8f;
             _btnReset.Click += OnResetDefaultsClicked;
             _contentPanel.Controls.Add(_btnReset);
 
             _btnMinimize = new ModernButton();
             _btnMinimize.Text = "Hide to Tray";
-            _btnMinimize.Location = new Point(margin + 320, curY);
-            _btnMinimize.Size = new Size(165, 38);
+            _btnMinimize.Location = new Point(margin + 322, curY);
+            _btnMinimize.Size = new Size(160, 42);
             _btnMinimize.NormalColor = Color.FromArgb(37, 99, 235);
             _btnMinimize.HoverColor = Color.FromArgb(29, 78, 216);
             _btnMinimize.PressedColor = Color.FromArgb(30, 64, 175);
+            _btnMinimize.CornerRadius = 8f;
             _btnMinimize.Click += delegate { HideToTray(); };
             _contentPanel.Controls.Add(_btnMinimize);
 
-            curY += 60;
+            curY += 66;
         }
 
-        private Panel CreateWhiteCard(int x, int y, int w, int h)
+        private ComboBox CreateFlatComboBox()
         {
-            Panel p = new Panel();
-            p.Location = new Point(x, y);
-            p.Size = new Size(w, h);
-            p.BackColor = Color.White;
-            p.Paint += delegate(object s, PaintEventArgs e)
-            {
-                e.Graphics.SmoothingMode = SmoothingMode.AntiAlias;
-                RectangleF rect = new RectangleF(0.5f, 0.5f, p.Width - 1.5f, p.Height - 1.5f);
-                using (GraphicsPath path = BatteryWidget.RoundedRect(rect, 9f))
-                using (Pen pen = new Pen(Color.FromArgb(226, 232, 240), 1.2f)) // Slate 200 border
-                {
-                    e.Graphics.DrawPath(pen, path);
-                }
-            };
-            return p;
+            ComboBox c = new ComboBox();
+            c.DropDownStyle = ComboBoxStyle.DropDownList;
+            c.FlatStyle = FlatStyle.Flat;
+            c.BackColor = Color.White;
+            c.ForeColor = Color.FromArgb(15, 23, 42);
+            c.Font = new Font("Segoe UI", 9.2f, FontStyle.Regular);
+            return c;
         }
 
-        private void AddCardHeader(Panel card, string title, Color accent)
+        private void AddCardSectionHeader(Control card, string title, Color accent)
         {
             card.Paint += delegate(object s, PaintEventArgs e)
             {
                 Graphics g = e.Graphics;
                 g.SmoothingMode = SmoothingMode.AntiAlias;
 
-                // Sleek vertical colored accent pill
-                RectangleF pillRect = new RectangleF(14, 12, 4, 15);
+                RectangleF pillRect = new RectangleF(14, 13, 4, 15);
                 using (GraphicsPath pp = BatteryWidget.RoundedRect(pillRect, 2f))
                 using (SolidBrush pb = new SolidBrush(accent))
                 {
@@ -631,7 +753,7 @@ namespace BatteryAlarmApp
             Label lbl = new Label();
             lbl.Text = title;
             lbl.Font = new Font("Segoe UI", 10.5f, FontStyle.Bold);
-            lbl.ForeColor = Color.FromArgb(15, 23, 42); // Deep slate
+            lbl.ForeColor = Color.FromArgb(15, 23, 42);
             lbl.Location = new Point(24, 10);
             lbl.AutoSize = true;
             card.Controls.Add(lbl);
@@ -663,41 +785,42 @@ namespace BatteryAlarmApp
         {
             if (stats.IsAvailable && stats.DesignCapacity > 0)
             {
-                _lblHealthPercent.Text = string.Format("Battery Health: {0}% ({1})",
-                    stats.HealthPercent, stats.HealthPercent >= 80 ? "Good Condition" : "Degraded");
-                _lblHealthPercent.ForeColor = stats.HealthPercent >= 80 ? Color.FromArgb(16, 185, 129) : Color.FromArgb(245, 158, 11);
+                _lblHealthBadge.Text = string.Format("Health: {0}% ({1})",
+                    stats.HealthPercent, stats.HealthPercent >= 80 ? "Good" : "Degraded");
+                _lblHealthBadge.ForeColor = stats.HealthPercent >= 80 ? Color.FromArgb(16, 185, 129) : Color.FromArgb(245, 158, 11);
 
-                _lblCycles.Text = string.Format("Cycle Count: {0} cycles", stats.CycleCount > 0 ? stats.CycleCount.ToString() : "N/A");
-                _lblCapacities.Text = string.Format("• Full: {0:N0} mWh / Design: {1:N0} mWh", stats.FullChargeCapacity, stats.DesignCapacity);
+                _lblCyclesBadge.Text = string.Format("• Cycles: {0}", stats.CycleCount > 0 ? stats.CycleCount.ToString() : "N/A");
             }
             else
             {
-                _lblHealthPercent.Text = "Battery Health: Ready";
-                _lblHealthSub.Text = "Click 'Official Report' to view complete Windows battery analytics.";
+                _lblHealthBadge.Text = "Battery Diagnostics Ready";
+                _lblCyclesBadge.Text = "";
             }
         }
 
         private void ApplySettingsToUI()
         {
-            _trackLow.Value = Math.Max(_trackLow.Minimum, Math.Min(_trackLow.Maximum, _settings.LowThreshold));
-            _lblLowValue.Text = _trackLow.Value.ToString() + "%";
-            _chkLowAlarm.Checked = _settings.EnableLowAlarm;
+            _sliderLow.Value = _settings.LowThreshold;
+            _lblLowPill.Text = _sliderLow.Value.ToString() + "%";
+            _toggleLow.Checked = _settings.EnableLowAlarm;
+            _sliderLow.Enabled = _toggleLow.Checked;
 
-            _trackHigh.Value = Math.Max(_trackHigh.Minimum, Math.Min(_trackHigh.Maximum, _settings.HighThreshold));
-            _lblHighValue.Text = _trackHigh.Value.ToString() + "%";
-            _chkHighAlarm.Checked = _settings.EnableHighAlarm;
+            _sliderHigh.Value = _settings.HighThreshold;
+            _lblHighPill.Text = _sliderHigh.Value.ToString() + "%";
+            _toggleHigh.Checked = _settings.EnableHighAlarm;
+            _sliderHigh.Enabled = _toggleHigh.Checked;
 
             string sound = _settings.SoundType;
             if (string.Equals(sound, "Chime", StringComparison.OrdinalIgnoreCase)) _cboSound.SelectedIndex = 1;
             else if (string.Equals(sound, "Siren", StringComparison.OrdinalIgnoreCase)) _cboSound.SelectedIndex = 2;
             else if (string.Equals(sound, "System", StringComparison.OrdinalIgnoreCase)) _cboSound.SelectedIndex = 3;
             else if (string.Equals(sound, "Custom", StringComparison.OrdinalIgnoreCase)) _cboSound.SelectedIndex = 4;
-            else _cboSound.SelectedIndex = 0; // "Alarm"
+            else _cboSound.SelectedIndex = 0;
 
             _txtCustomSound.Text = _settings.CustomSoundPath ?? "";
 
-            _chkLoop.Checked = _settings.LoopAlarm;
-            _cboInterval.Enabled = _chkLoop.Checked;
+            _toggleLoop.Checked = _settings.LoopAlarm;
+            _cboInterval.Enabled = _toggleLoop.Checked;
 
             int sec = _settings.AlarmIntervalSeconds;
             if (sec <= 3) _cboInterval.SelectedIndex = 0;
@@ -706,18 +829,17 @@ namespace BatteryAlarmApp
             else if (sec <= 15) _cboInterval.SelectedIndex = 3;
             else _cboInterval.SelectedIndex = 4;
 
-            _chkQuietHours.Checked = _settings.QuietHoursEnabled;
+            _toggleQuiet.Checked = _settings.QuietHoursEnabled;
             _cboQuietStart.SelectedIndex = Math.Max(0, Math.Min(23, _settings.QuietHoursStart));
             _cboQuietEnd.SelectedIndex = Math.Max(0, Math.Min(23, _settings.QuietHoursEnd));
-            _cboQuietStart.Enabled = _chkQuietHours.Checked;
-            _cboQuietEnd.Enabled = _chkQuietHours.Checked;
+            _pnlQuietHoursTime.Visible = _toggleQuiet.Checked;
 
-            _chkFullCharge.Checked = _settings.FullChargeAlert;
+            _toggleFullCharge.Checked = _settings.FullChargeAlert;
 
-            _chkAutoStart.Checked = _settings.StartWithWindows;
-            _chkStartMin.Checked = _settings.StartMinimized;
-            _chkCloseToTray.Checked = _settings.MinimizeToTrayOnClose;
-            _chkNotify.Checked = _settings.ShowNotifications;
+            _toggleAutoStart.Checked = _settings.StartWithWindows;
+            _toggleStartMin.Checked = _settings.StartMinimized;
+            _toggleCloseToTray.Checked = _settings.MinimizeToTrayOnClose;
+            _toggleNotify.Checked = _settings.ShowNotifications;
 
             UpdateCustomSoundControls();
         }
@@ -761,16 +883,16 @@ namespace BatteryAlarmApp
 
         private void OnSaveClicked(object sender, EventArgs e)
         {
-            _settings.LowThreshold = _trackLow.Value;
-            _settings.EnableLowAlarm = _chkLowAlarm.Checked;
+            _settings.LowThreshold = _sliderLow.Value;
+            _settings.EnableLowAlarm = _toggleLow.Checked;
 
-            _settings.HighThreshold = _trackHigh.Value;
-            _settings.EnableHighAlarm = _chkHighAlarm.Checked;
+            _settings.HighThreshold = _sliderHigh.Value;
+            _settings.EnableHighAlarm = _toggleHigh.Checked;
 
             _settings.SoundType = GetSelectedSoundType();
             _settings.CustomSoundPath = _txtCustomSound.Text;
 
-            _settings.LoopAlarm = _chkLoop.Checked;
+            _settings.LoopAlarm = _toggleLoop.Checked;
             switch (_cboInterval.SelectedIndex)
             {
                 case 0: _settings.AlarmIntervalSeconds = 3; break;
@@ -780,15 +902,15 @@ namespace BatteryAlarmApp
                 default: _settings.AlarmIntervalSeconds = 30; break;
             }
 
-            _settings.QuietHoursEnabled = _chkQuietHours.Checked;
+            _settings.QuietHoursEnabled = _toggleQuiet.Checked;
             _settings.QuietHoursStart = _cboQuietStart.SelectedIndex;
             _settings.QuietHoursEnd = _cboQuietEnd.SelectedIndex;
-            _settings.FullChargeAlert = _chkFullCharge.Checked;
+            _settings.FullChargeAlert = _toggleFullCharge.Checked;
 
-            _settings.StartWithWindows = _chkAutoStart.Checked;
-            _settings.StartMinimized = _chkStartMin.Checked;
-            _settings.MinimizeToTrayOnClose = _chkCloseToTray.Checked;
-            _settings.ShowNotifications = _chkNotify.Checked;
+            _settings.StartWithWindows = _toggleAutoStart.Checked;
+            _settings.StartMinimized = _toggleStartMin.Checked;
+            _settings.MinimizeToTrayOnClose = _toggleCloseToTray.Checked;
+            _settings.ShowNotifications = _toggleNotify.Checked;
 
             _settings.Save();
             _monitor.CheckStatus();
@@ -827,22 +949,34 @@ namespace BatteryAlarmApp
                 return;
             }
 
+            // Update in-window banner
             if (state == ActiveAlarmState.LowBattery)
             {
-                _bannerLabel.Text = string.Format("LOW BATTERY ALERT ({0}%): Connect charger now.", percent);
-                _bannerPanel.BackColor = Color.FromArgb(239, 68, 68); // Red
-            }
-            else if (state == ActiveAlarmState.FullCharge)
-            {
-                _bannerLabel.Text = "FULL CHARGE (100%): Unplug to protect battery health.";
-                _bannerPanel.BackColor = Color.FromArgb(16, 185, 129); // Emerald
+                _bannerLabel.Text = string.Format("LOW BATTERY ALERT ({0}%): Please connect charger now!", percent);
+                _bannerPanel.BackColor = Color.FromArgb(239, 68, 68);
             }
             else
             {
-                _bannerLabel.Text = string.Format("CHARGE THRESHOLD ({0}%): Unplug charger now.", percent);
-                _bannerPanel.BackColor = Color.FromArgb(16, 185, 129); // Emerald
+                _bannerLabel.Text = string.Format("CHARGE THRESHOLD ({0}%): Please remove charger now!", percent);
+                _bannerPanel.BackColor = Color.FromArgb(16, 185, 129);
             }
             _bannerPanel.Visible = true;
+
+            // Show Top-Most Pop-up Window (user requested)
+            try
+            {
+                if (_activePopup != null && !_activePopup.IsDisposed)
+                {
+                    _activePopup.Close();
+                }
+                _activePopup = new AlertPopupForm(state, percent, delegate
+                {
+                    // User clicked "OK (Pause checking for 5 minutes)"
+                    _monitor.SnoozeAlarm(5);
+                });
+                _activePopup.Show();
+            }
+            catch { }
         }
 
         private void OnAlarmDismissed(string reason)
@@ -854,6 +988,11 @@ namespace BatteryAlarmApp
             }
 
             _bannerPanel.Visible = false;
+            if (_activePopup != null && !_activePopup.IsDisposed)
+            {
+                try { _activePopup.Close(); } catch { }
+                _activePopup = null;
+            }
         }
 
         public void RestoreWindow()
@@ -870,7 +1009,7 @@ namespace BatteryAlarmApp
             if (!_firstMinimizeTipShown)
             {
                 _firstMinimizeTipShown = true;
-                _tray.ShowTip("BatteryGuard Pro", "Running silently in the background tray. Double-click tray icon to open.");
+                _tray.ShowTip("BatteryGuard Pro", "Running silently in background tray. Double-click tray icon to open.");
             }
         }
 
@@ -881,20 +1020,20 @@ namespace BatteryAlarmApp
             if (_contentPanel != null)
             {
                 int margin = 20;
-                int cardW = _contentPanel.ClientSize.Width - (margin * 2);
+                int cardW = _contentPanel.ClientSize.Width - (margin * 2) - 8;
                 if (cardW < 460) cardW = 460;
 
-                Panel[] cards = new Panel[] {
-                    _bannerPanel, _cardStatus, _cardHealth, _cardThresholds,
-                    _cardSound, _cardSmart, _cardSystem, _cardEfficiency
+                Control[] cards = new Control[] {
+                    _bannerPanel, _cardHero, _cardThresholds, _cardAudio,
+                    _cardSmart, _cardSystem, _cardEfficiency
                 };
 
-                foreach (Panel p in cards)
+                foreach (Control c in cards)
                 {
-                    if (p != null)
+                    if (c != null)
                     {
-                        p.Width = cardW;
-                        p.Invalidate();
+                        c.Width = cardW;
+                        c.Invalidate();
                     }
                 }
 
@@ -915,6 +1054,10 @@ namespace BatteryAlarmApp
             }
 
             _monitor.Stop();
+            if (_activePopup != null && !_activePopup.IsDisposed)
+            {
+                try { _activePopup.Close(); } catch { }
+            }
             if (_tray != null)
             {
                 _tray.Dispose();

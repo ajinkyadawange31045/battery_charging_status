@@ -20,7 +20,11 @@ $sources = @(
     "src\AudioAlert.cs",
     "src\BatteryHealthService.cs",
     "src\BatteryMonitor.cs",
+    "src\Controls\ModernToggle.cs",
+    "src\Controls\ModernSlider.cs",
+    "src\Controls\ModernCard.cs",
     "src\BatteryWidget.cs",
+    "src\AlertPopupForm.cs",
     "src\SystemTrayManager.cs",
     "src\MainForm.cs",
     "src\Program.cs"

@@ -1,12 +1,12 @@
 # 🔋 BatteryGuard Pro
 
 [![Platform](https://img.shields.io/badge/Platform-Windows%2011%20%7C%2010-0078D4?logo=windows&logoColor=white)](https://github.com/ajink/battery_charging_status)
-[![Executable Size](https://img.shields.io/badge/Size-69%20KB-success?style=flat)](https://github.com/ajink/battery_charging_status/releases)
+[![Executable Size](https://img.shields.io/badge/Size-81%20KB-success?style=flat)](https://github.com/ajink/battery_charging_status/releases)
 [![RAM Usage](https://img.shields.io/badge/RAM-~18%20MB-blue)](https://github.com/ajink/battery_charging_status)
 [![Battery Impact](https://img.shields.io/badge/Battery%20Drain-%3C0.001%25-brightgreen)](https://github.com/ajink/battery_charging_status)
 [![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 
-An **ultra-lightweight (~69 KB)**, portable, native Windows 11 & 10 utility that tracks your laptop charging state in real-time, displays health analytics, and sounds customizable alarms when your battery crosses safe thresholds.
+An **ultra-lightweight (~81 KB)**, portable, native Windows 11 & 10 utility that tracks your laptop charging state in real-time, displays health analytics, and sounds customizable alarms when your battery crosses safe thresholds.
 
 Designed with a **premium, white Fluent UI**, responsive card layout, smart quiet hours, and virtually **zero CPU/RAM/Battery footprint**.
 
@@ -18,8 +18,8 @@ Choose either option below to get started immediately:
 
 | Format | Download Link | Description |
 | :--- | :--- | :--- |
-| **Direct Executable** | [⬇️ **Download BatteryGuard.exe**](release/BatteryGuard.exe?raw=true) *(~72 KB)* | Ready-to-run single file. No install, no setup required. |
-| **ZIP Package** | [📦 **Download BatteryGuard-v1.0.0-Portable.zip**](release/BatteryGuard-v1.0.0-Portable.zip?raw=true) *(~35 KB)* | Includes `BatteryGuard.exe` + Quick Start Guide. |
+| **Direct Executable** | [⬇️ **Download BatteryGuard.exe**](release/BatteryGuard.exe?raw=true) *(~81 KB)* | Ready-to-run single file. No install, no setup required. |
+| **ZIP Package** | [📦 **Download BatteryGuard-v1.0.0-Portable.zip**](release/BatteryGuard-v1.0.0-Portable.zip?raw=true) *(~39 KB)* | Includes `BatteryGuard.exe` + Quick Start Guide. |
 
 > [!TIP]
 > **No installation needed**: Simply download `BatteryGuard.exe`, place it anywhere on your laptop (e.g. `Desktop`, `Documents`, or `C:\Tools\`), and double-click to launch. You can also copy it to a USB flash drive and run it on any Windows laptop!
@@ -30,13 +30,16 @@ Choose either option below to get started immediately:
 
 <div align="center">
 
-### Modern White Windows 11 Fluent Interface
+### Modern White Windows 11 Fluent 2 Interface
 
-| 🖥️ Live Dashboard & Health Diagnostics | ⚠️ Low Battery Warning Banner | ⚡ Charge Protection Alert |
+| 🖥️ Modern Fluent Dashboard | 🪫 Put on Charger Popup | ⚡ Remove Charger Popup |
 | :---: | :---: | :---: |
-| <img src="docs/screenshots/dashboard.png" width="270" alt="BatteryGuard Pro Dashboard" /> | <img src="docs/screenshots/alert_low_battery.png" width="270" alt="Low Battery Warning" /> | <img src="docs/screenshots/alert_high_battery.png" width="270" alt="High Charge Alert" /> |
+| <img src="docs/screenshots/dashboard.png" width="300" alt="BatteryGuard Pro Modern Dashboard" /> | <img src="docs/screenshots/popup_low_battery.png" width="260" alt="Put on Charger Popup Alert" /> | <img src="docs/screenshots/popup_remove_charger.png" width="260" alt="Remove Charger Popup Alert" /> |
 
 </div>
+
+> [!IMPORTANT]
+> **Smart Pop-up Alert with 5-Minute Snooze**: When a threshold is crossed, a high-priority popup alert appears on top of all windows instructing you to **"PLEASE PUT ON CHARGER!"** or **"PLEASE REMOVE CHARGER!"**. Clicking the prominent **OK** button silences the alarm and pauses checking for **5 minutes**, then automatically resumes monitoring. If you plug in or unplug the charger before the 5 minutes are up, the alert dismisses and resets automatically!
 
 ---
 
@@ -57,7 +60,7 @@ Most modern background tools are built with Electron or Chromium and waste hundr
 
 | Metric | BatteryGuard Pro | Typical Electron / Web App | Real-World Impact |
 | :--- | :--- | :--- | :--- |
-| **💾 Disk Space** | **~69 KB** (ZIP is 35 KB) | 150 MB – 300 MB | Takes up virtually nothing. |
+| **💾 Disk Space** | **~81 KB** (ZIP is 39 KB) | 150 MB – 300 MB | Takes up virtually nothing. |
 | **🧠 RAM Usage (Tray)** | **~8 MB – 18 MB** | 180 MB – 450 MB | Negligible impact on multitasking. |
 | **⏱️ Idle CPU Usage** | **0.0%** (Event-driven sleep) | 0.5% – 3.0% background poll | CPU sleeps between updates. |
 | **🔋 Battery Consumption** | **< 0.001% per day** | Noticeable passive battery drain | **Zero extra battery drain**. |

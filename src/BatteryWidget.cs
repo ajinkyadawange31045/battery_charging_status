@@ -84,28 +84,28 @@ namespace BatteryAlarmApp
                 badgeBgColor = Color.FromArgb(236, 253, 245); // Soft emerald tint #ECFDF5
                 badgeBorderColor = Color.FromArgb(167, 243, 208); // Emerald 200
                 badgeTextColor = Color.FromArgb(4, 120, 87); // Emerald 700
-                badgeText = (_percent >= 100) ? "⚡ Fully Charged" : "⚡ Plugged In (Charging)";
+                badgeText = (_percent >= 100) ? "Fully Charged" : "Plugged In (Charging)";
             }
             else if (_percent <= 15)
             {
                 badgeBgColor = Color.FromArgb(254, 242, 242); // Soft red #FEF2F2
                 badgeBorderColor = Color.FromArgb(254, 202, 202); // Red 200
                 badgeTextColor = Color.FromArgb(185, 28, 28); // Red 700
-                badgeText = "⚠️ Low Battery (Discharging)";
+                badgeText = "Low Battery (Discharging)";
             }
             else if (_percent <= 25)
             {
                 badgeBgColor = Color.FromArgb(255, 251, 235); // Soft amber #FFFBEB
                 badgeBorderColor = Color.FromArgb(253, 230, 138); // Amber 200
                 badgeTextColor = Color.FromArgb(180, 83, 9); // Amber 700
-                badgeText = "🔋 On Battery (Low Level)";
+                badgeText = "On Battery (Low Level)";
             }
             else
             {
                 badgeBgColor = Color.FromArgb(239, 246, 255); // Soft blue #EFF6FF
                 badgeBorderColor = Color.FromArgb(191, 219, 254); // Blue 200
                 badgeTextColor = Color.FromArgb(29, 78, 216); // Blue 700
-                badgeText = "🔋 On Battery (Normal)";
+                badgeText = "On Battery (Normal)";
             }
 
             using (Font badgeFont = new Font("Segoe UI", 9.5f, FontStyle.Bold))
